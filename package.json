@@ -14,24 +14,29 @@
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",
-    "dotenv": "^16.3.1",
     "chokidar": "^3.5.3",
-    "marked": "^9.1.6",
-    "commander": "^11.1.0"
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
+    "marked": "^9.1.6"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2",
-    "jest": "^29.7.0",
     "@types/jest": "^29.5.3",
-    "eslint": "^8.56.0",
+    "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-jest": "^27.6.0",
+    "eslint-plugin-jest": "^29.0.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.1.1",
-    "prettier": "^3.2.5"
+    "jest": "^30.0.0",
+    "nodemon": "^3.0.2",
+    "prettier": "^3.5.3"
   },
-  "keywords": ["notion", "synchronization", "grand-shooting", "api"],
+  "keywords": [
+    "notion",
+    "synchronization",
+    "grand-shooting",
+    "api"
+  ],
   "author": "GrandShooting Team",
   "license": "MIT"
-} 
+}
