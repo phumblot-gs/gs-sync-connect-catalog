@@ -173,13 +173,53 @@ class NotionClient {
    * Supprime tout le contenu d'une page
    */
   async clearPageContent(pageId) {
-    try {
-      const blocks = await this.notion.blocks.children.list({ block_id: pageId });
-      
-      for (const block of blocks.results) {
-        await this.notion.blocks.delete({ block_id: block.id });
+    function wait(ms) {
+      return new Promise(res => setTimeout(res, ms));
+    }
+    async function safeDelete(notion, blockId, retries = 3) {
+      for (let i = 0; i < retries; i++) {
+        try {
+          await notion.blocks.delete({ block_id: blockId });
+          return;
+        } catch (err) {
+          if (err.code === 'conflict_error' && i < retries - 1) {
+            await wait(500);
+          } else {
+            throw err;
+          }
+        }
       }
-      
+    }
+    try {
+      let hasMore = true;
+      let startCursor = undefined;
+      let total = 0;
+      let deleted = 0;
+      // Compter le nombre total de blocks à supprimer (pour la progression)
+      {
+        let cursor = undefined;
+        do {
+          const resp = await this.notion.blocks.children.list({ block_id: pageId, start_cursor: cursor });
+          total += resp.results.length;
+          cursor = resp.has_more ? resp.next_cursor : undefined;
+        } while (cursor);
+      }
+      console.log(`🗑️ Suppression de ${total} blocks...`);
+      while (hasMore) {
+        const response = await this.notion.blocks.children.list({ block_id: pageId, start_cursor: startCursor });
+        const blocks = response.results;
+        // Suppression par lots de 3 en parallèle, avec retry et délai
+        for (let i = 0; i < blocks.length; i += 3) {
+          const batch = blocks.slice(i, i + 3);
+          await Promise.all(batch.map(block => safeDelete(this.notion, block.id)));
+          deleted += batch.length;
+          process.stdout.write(`\r   Progression: ${Math.min(deleted, total)}/${total} blocks supprimés...`);
+          await wait(400);
+        }
+        hasMore = response.has_more;
+        startCursor = response.next_cursor;
+      }
+      process.stdout.write('\n');
       console.log('🗑️ Contenu existant supprimé');
     } catch (error) {
       console.error('❌ Erreur lors de la suppression:', error.message);
@@ -187,84 +227,247 @@ class NotionClient {
     }
   }
 
-  /**
-   * Convertit du Markdown en blocs Notion
-   */
+  parseRichTextWithMarkdown(text) {
+    // Supporte gras (**), italique (_ ou *), souligné (__), code (`), liens [texte](url)
+    const regex = /(!?\[[^\]]*\]\([^\)]+\))|(\*\*[^*]+\*\*)|(\*[^*]+\*)|(_[^_]+_)|(__[^_]+__)|(`[^`]+`)/g;
+    const segments = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        segments.push({
+          type: 'text',
+          text: { content: text.slice(lastIndex, match.index) },
+          annotations: {},
+        });
+      }
+      const segment = match[0];
+      // Image inline (sera gérée comme bloc, donc ici on ignore)
+      if (segment.startsWith('![')) {
+        // rien ici, géré dans markdownToBlocks
+      }
+      // Lien
+      else if (segment.startsWith('[')) {
+        const linkMatch = segment.match(/\[([^\]]+)\]\(([^\)]+)\)/);
+        if (linkMatch) {
+          segments.push({
+            type: 'text',
+            text: { content: linkMatch[1], link: { url: linkMatch[2] } },
+            annotations: {},
+          });
+        }
+      }
+      // Gras
+      else if (segment.startsWith('**')) {
+        segments.push({
+          type: 'text',
+          text: { content: segment.slice(2, -2) },
+          annotations: { bold: true },
+        });
+      }
+      // Souligné
+      else if (segment.startsWith('__')) {
+        segments.push({
+          type: 'text',
+          text: { content: segment.slice(2, -2) },
+          annotations: { underline: true },
+        });
+      }
+      // Italique *texte*
+      else if (segment.startsWith('*')) {
+        segments.push({
+          type: 'text',
+          text: { content: segment.slice(1, -1) },
+          annotations: { italic: true },
+        });
+      }
+      // Italique _texte_
+      else if (segment.startsWith('_')) {
+        segments.push({
+          type: 'text',
+          text: { content: segment.slice(1, -1) },
+          annotations: { italic: true },
+        });
+      }
+      // Code inline
+      else if (segment.startsWith('`')) {
+        segments.push({
+          type: 'text',
+          text: { content: segment.slice(1, -1) },
+          annotations: { code: true },
+        });
+      }
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      segments.push({
+        type: 'text',
+        text: { content: text.slice(lastIndex) },
+        annotations: {},
+      });
+    }
+    return segments;
+  }
+
   markdownToBlocks(markdown) {
     const lines = markdown.split('\n');
     const blocks = [];
-    
-    for (const line of lines) {
-      if (line.trim() === '') {
-        continue; // Ignorer les lignes vides
+    let inCodeBlock = false;
+    let codeBlockLang = '';
+    let codeBlockLines = [];
+
+    // Nouvelle logique pour listes imbriquées
+    const stack = [{children: blocks, indent: -1}];
+    const listRegex = /^([ \t]*)([-*]|\d+\.) (.*)$/;
+
+    function resetStackToRoot() {
+      while (stack.length > 1) {
+        stack.pop();
       }
-      
+    }
+
+    for (const line of lines) {
+      // Bloc de code
+      if (line.startsWith('```')) {
+        if (!inCodeBlock) {
+          inCodeBlock = true;
+          codeBlockLang = line.replace('```', '').trim() || 'plain text';
+          codeBlockLines = [];
+        } else {
+          // Fin du bloc de code
+          resetStackToRoot();
+          stack[stack.length-1].children.push({
+            object: 'block',
+            type: 'code',
+            code: {
+              rich_text: [{ type: 'text', text: { content: codeBlockLines.join('\n') } }],
+              language: codeBlockLang,
+            },
+          });
+          inCodeBlock = false;
+          codeBlockLang = '';
+          codeBlockLines = [];
+        }
+        continue;
+      }
+      if (inCodeBlock) {
+        codeBlockLines.push(line);
+        continue;
+      }
+
+      // Image en bloc ![alt](url)
+      if (line.match(/^!\[[^\]]*\]\([^\)]+\)/)) {
+        resetStackToRoot();
+        const imgMatch = line.match(/^!\[([^\]]*)\]\(([^\)]+)\)/);
+        if (imgMatch) {
+          stack[stack.length-1].children.push({
+            object: 'block',
+            type: 'image',
+            image: {
+              type: 'external',
+              external: { url: imgMatch[2] },
+              caption: imgMatch[1] ? [{ type: 'text', text: { content: imgMatch[1] } }] : [],
+            },
+          });
+        }
+        continue;
+      }
+
       // Titre principal (# )
       if (line.startsWith('# ')) {
-        blocks.push({
+        resetStackToRoot();
+        stack[stack.length-1].children.push({
           object: 'block',
           type: 'heading_1',
           heading_1: {
-            rich_text: [{ type: 'text', text: { content: line.slice(2) } }]
-          }
+            rich_text: this.parseRichTextWithMarkdown(line.slice(2)),
+          },
         });
       }
       // Sous-titre (## )
       else if (line.startsWith('## ')) {
-        blocks.push({
+        resetStackToRoot();
+        stack[stack.length-1].children.push({
           object: 'block',
           type: 'heading_2',
           heading_2: {
-            rich_text: [{ type: 'text', text: { content: line.slice(3) } }]
-          }
+            rich_text: this.parseRichTextWithMarkdown(line.slice(3)),
+          },
         });
       }
       // Sous-sous-titre (### )
       else if (line.startsWith('### ')) {
-        blocks.push({
+        resetStackToRoot();
+        stack[stack.length-1].children.push({
           object: 'block',
           type: 'heading_3',
           heading_3: {
-            rich_text: [{ type: 'text', text: { content: line.slice(4) } }]
-          }
-        });
-      }
-      // Liste à puces (- )
-      else if (line.startsWith('- ')) {
-        blocks.push({
-          object: 'block',
-          type: 'bulleted_list_item',
-          bulleted_list_item: {
-            rich_text: [{ type: 'text', text: { content: line.slice(2) } }]
-          }
+            rich_text: this.parseRichTextWithMarkdown(line.slice(4)),
+          },
         });
       }
       // Checkbox (- [ ] ou - [x])
-      else if (line.match(/^- \[[ x]\]/)) {
-        const checked = line.includes('[x]');
-        const text = line.replace(/^- \[[ x]\] /, '');
-        blocks.push({
+      else if (line.match(/^- \[[ xX]\]/)) {
+        resetStackToRoot();
+        const checked = line.match(/^- \[[xX]\]/) ? true : false;
+        const text = line.replace(/^- \[[ xX]\] /, '');
+        stack[stack.length-1].children.push({
           object: 'block',
           type: 'to_do',
           to_do: {
-            rich_text: [{ type: 'text', text: { content: text } }],
-            checked: checked
-          }
+            rich_text: this.parseRichTextWithMarkdown(text),
+            checked: checked,
+          },
         });
       }
+      // Liste à puces ou numérotée imbriquée
+      else if (listRegex.test(line)) {
+        const [, indentStr, marker, content] = line.match(listRegex);
+        const indent = indentStr.replace(/\t/g, '    ').length;
+        const type = marker.match(/\d+\./) ? 'numbered_list_item' : 'bulleted_list_item';
+        const block = {
+          object: 'block',
+          type,
+          [type]: {
+            rich_text: this.parseRichTextWithMarkdown(content),
+          },
+        };
+        // Trouver le bon parent selon l'indentation
+        while (stack.length > 1 && indent <= stack[stack.length-1].indent) {
+          stack.pop();
+        }
+        // Ajouter comme enfant du parent courant
+        stack[stack.length-1].children.push(block);
+        // Préparer à recevoir des enfants si besoin
+        block.children = [];
+        stack.push({children: block.children, indent});
+      }
       // Texte normal
-      else {
-        blocks.push({
+      else if (line.trim() !== '') {
+        resetStackToRoot();
+        stack[stack.length-1].children.push({
           object: 'block',
           type: 'paragraph',
           paragraph: {
-            rich_text: [{ type: 'text', text: { content: line } }]
-          }
+            rich_text: this.parseRichTextWithMarkdown(line),
+          },
         });
       }
     }
-    
-    return blocks;
+    // Nettoyer les propriétés children vides
+    function clean(blocks) {
+      for (const block of blocks) {
+        if (block.children && block.children.length > 0) {
+          if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
+            block[block.type].children = clean(block.children);
+          }
+        }
+        delete block.children;
+      }
+      return blocks;
+    }
+    return clean(blocks);
   }
 
   /**
