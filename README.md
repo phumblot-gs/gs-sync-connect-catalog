@@ -170,4 +170,30 @@ npm run init-prd
 npm run sync-to-notion
 ```
 
-✅ **Ton PRD sera synchronisé avec Notion !** 
+✅ **Ton PRD sera synchronisé avec Notion !**
+
+## 🧪 Tests & CI/CD
+
+### Tests unitaires
+- Les tests unitaires sont écrits avec [Jest](https://jestjs.io/).
+- Pour lancer tous les tests :
+  ```bash
+  npm run test
+  ```
+- Les tests se trouvent dans `src/__tests__/` ou à côté des modules sous la forme `*.test.js` ou `*.spec.js`.
+- La couverture de code est générée dans le dossier `coverage/`.
+
+### Linting
+- Vérifie la qualité du code avec ESLint et Prettier :
+  ```bash
+  npm run lint
+  ```
+
+### Intégration continue (CI)
+- Un workflow GitHub Actions (`.github/workflows/ci.yml`) exécute automatiquement lint + tests à chaque push ou pull request sur `main` ou `develop`.
+- Le badge de statut CI peut être ajouté en haut du README si besoin.
+
+### Objectifs
+- 80% de couverture sur le code critique (mapping, transformation, gestion des erreurs)
+- 100% sur les fonctions de mapping/transformation
+- Déploiement automatique sur Vercel à chaque merge sur `main` 
