@@ -1,0 +1,26 @@
+{
+  "name": "gs-sync-connect-catalog",
+  "version": "1.0.0",
+  "description": "Application de synchronisation entre comptes Grand Shooting avec intégration Notion",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "sync-to-notion": "node src/notion/sync.js --to-notion",
+    "sync-from-notion": "node src/notion/sync.js --from-notion",
+    "watch": "node src/notion/watch.js",
+    "init-prd": "node src/init-prd.js"
+  },
+  "dependencies": {
+    "@notionhq/client": "^2.2.15",
+    "dotenv": "^16.3.1",
+    "chokidar": "^3.5.3",
+    "marked": "^9.1.6",
+    "commander": "^11.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": ["notion", "synchronization", "grand-shooting", "api"],
+  "author": "GrandShooting Team",
+  "license": "MIT"
+} 
