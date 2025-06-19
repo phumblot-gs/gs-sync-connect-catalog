@@ -1,12 +1,25 @@
-const fs = require('fs').promises;
-const path = require('path');
+const fs = require("fs").promises;
+const path = require("path");
 
-const prdTemplate = `# Project Requirement Description (PRD)
+const prdTemplate = `<!--
+FRONT MATTER - Propriétés synchronisées avec Notion
+====================================================
+application: Service | Frontend | Backend
+status: Draft | Review | Validated | Obsolete
+description: Description courte du projet
+-->
+---
+application: Service
+status: Draft
+description: "Application de synchronisation entre comptes Grand Shooting avec monitoring"
+---
+
+# Project Requirement Description (PRD)
 ## Application de Synchronisation Grand Shooting
 
 ### 📋 Informations Générales
 - **Nom du projet** : GS Sync Connect Catalog
-- **Date de création** : ${new Date().toLocaleDateString('fr-FR')}
+- **Date de création** : ${new Date().toLocaleDateString("fr-FR")}
 - **Responsable produit** : [À compléter]
 - **Équipe technique** : [À compléter]
 
@@ -157,15 +170,17 @@ Cette application permettra de :
 
 async function initPRD() {
   try {
-    const prdPath = path.join(__dirname, '../PRD.md');
-    await fs.writeFile(prdPath, prdTemplate, 'utf8');
-    console.log('✅ Fichier PRD.md créé avec succès !');
-    console.log('📝 Vous pouvez maintenant le modifier et le synchroniser avec Notion');
-    console.log('🚀 Commandes disponibles :');
-    console.log('   npm run sync-to-notion   # Envoyer vers Notion');
-    console.log('   npm run sync-from-notion # Récupérer depuis Notion');
+    const prdPath = path.join(__dirname, "../PRD.md");
+    await fs.writeFile(prdPath, prdTemplate, "utf8");
+    console.log("✅ Fichier PRD.md créé avec succès !");
+    console.log(
+      "📝 Vous pouvez maintenant le modifier et le synchroniser avec Notion",
+    );
+    console.log("🚀 Commandes disponibles :");
+    console.log("   npm run sync-to-notion   # Envoyer vers Notion");
+    console.log("   npm run sync-from-notion # Récupérer depuis Notion");
   } catch (error) {
-    console.error('❌ Erreur lors de la création du PRD:', error.message);
+    console.error("❌ Erreur lors de la création du PRD:", error.message);
   }
 }
 
@@ -173,4 +188,4 @@ if (require.main === module) {
   initPRD();
 }
 
-module.exports = { initPRD }; 
+module.exports = { initPRD };

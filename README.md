@@ -50,47 +50,23 @@ Pour utiliser le token Notion dans GitHub Actions (CI/CD) :
 
 Tu pourras ensuite y accéder dans tes workflows GitHub Actions via `${{ secrets.NOTION_TOKEN }}`.
 
-## 🛠️ Exemple de workflow GitHub Actions
 
-```yaml
-name: Sync PRD with Notion
-on:
-  workflow_dispatch:
-  push:
-    paths:
-      - 'PRD.md'
-      - 'src/**'
-      - 'package.json'
-      - 'package-lock.json'
-
-jobs:
-  sync:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - name: Install dependencies
-        run: npm install
-      - name: Sync PRD to Notion
-        env:
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
-          NOTION_WORKSPACE: ${{ secrets.NOTION_WORKSPACE }}
-        run: npm run sync-to-notion
-```
 
 ## 📁 Structure du projet
 
 ```
 src/
-├── notion/
-│   ├── client.js      # Client API Notion
-│   └── sync.js        # Logique de synchronisation
 ├── init-prd.js        # Création du PRD initial
 └── index.js           # Point d'entrée principal
+
+docs/
+├── notion/
+│   ├── client.js      # Client API Notion
+│   ├── sync.js        # Logique de synchronisation PRD
+│   ├── features-*.js  # Logique de synchronisation features
+│   └── format-prd.js  # Formatage pour Notion
+└── features/          # Documentation des features
+    └── *.md           # Fichiers features individuels
 ```
 
 ## 📋 Liens utiles
@@ -100,74 +76,169 @@ src/
 ## 🔧 Configuration
 
 ### Database Notion
-Cette application synchronise avec une **database Notion** plutôt qu'une page simple. Cela permet de :
-- **Centraliser** tous les PRD de tes modules
-- **Filtrer** et rechercher par projet, statut, etc.
-- **Gérer** les métadonnées (statut, responsable, dates)
-- **Avoir une vue d'ensemble** de tous tes projets
-
-#### Structure de ta database :
-| Propriété | Type | Valeurs |
-|-----------|------|---------|
-| **name** | Title | Nom du projet |
-| **status** | Select | `draft`, `review`, `validated`, `obsolete` |
-| **description** | Rich Text | Description courte |
-| **Application** | Select | `Frontend`, `Backend`, `Service` |
-| **Contenu** | Rich Text | Le PRD complet |
-
-### Token Notion
+Le PRD est synchronisé avec une **database Notion**. Pour mettre en place la synchronisation :
 1. Va sur https://developers.notion.com/
-2. Crée une intégration "GS Sync Connect Catalog"
-3. Copie le token dans `.env`
-4. **Partage ta database PRD avec l'intégration** (pas une page !)
+2. Crée une intégration "GS Sync Connect Catalog" si elle n'existe pas déjà
+3. Copie le token dans une variable d'environnement NOTION_TOKEN dans le fichier `.env`
+4. Ajoute au fichier .env la variable d'environnement NOTION_PAGE_ID avec l'ID de la database Notion
+5. Initialise le PRD avec la commande `npm run init-prd` et remplis le selon les besoins du projet
 
-### ID de database Notion
-L'ID est déjà configuré : `216582cb2b9c8045881ae17bc1b78385`
+### Configuration des databases Notion
+
+Le projet utilise deux databases Notion :
+
+1. **PRD Database** : `216582cb2b9c8045881ae17bc1b78385`
+   - Contient le Project Requirement Description principal
+   - Champs : Name, Status, Description, Application, Contenu
+
+2. **Features Database** : `1a5582cb2b9c807682bef53c030f683b`
+   - Contient la documentation détaillée des features
+   - Champs : Name, Status (Draft/Review/Validated/Obsolete), Module, Plans (Free/Growth/Pro/Enterprise), Limite
+
+**Variables d'environnement à configurer :**
+```bash
+NOTION_TOKEN=your_notion_integration_token
+NOTION_PAGE_ID=216582cb2b9c8045881ae17bc1b78385
+NOTION_FEATURES_DATABASE_ID=1a5582cb2b9c807682bef53c030f683b
+```
 
 ## 🔄 Workflow de développement
 
+### Workflow PRD
 1. Modifier le `PRD.md` localement
-2. Exécuter `npm run sync-to-notion`
-3. Le PRD est automatiquement créé/mis à jour dans ta database Notion
-4. L'équipe peut collaborer directement dans l'entrée de la database
-5. Synchroniser les changements avec `npm run sync-from-notion`
+2. **Optionnel** : Exécuter `npm run format-for-notion` pour normaliser le format avant commit
+3. Exécuter `npm run sync-to-notion`
+4. Le PRD est automatiquement créé/mis à jour dans ta database Notion
+5. L'équipe peut collaborer directement dans l'entrée de la database
+6. Synchroniser les changements avec `npm run sync-from-notion`
 
-### 📊 Avantages de la database
+### Workflow Features
+1. Créer une nouvelle feature : `npm run init-feature`
+2. Éditer le fichier dans `docs/features/nom-feature.md`
+3. Formatter tous les documents avant commit : `npm run format-for-notion`
+4. Synchroniser vers Notion : `npm run sync-features-to-notion`
+4. L'équipe collabore dans la database Features de Notion
+5. Récupérer les changements : `npm run sync-features-from-notion`
 
-- **Vue d'ensemble** : Tous tes PRD au même endroit
-- **Filtrage** : Filtrer par statut (draft, review, validated)
-- **Recherche** : Rechercher par nom de projet ou module
-- **Métadonnées** : Statut, responsable, dates automatiquement gérés
-- **Collaboration** : Commentaires et mentions directement dans Notion
+### Workflow complet (PRD + Features)
+- `npm run sync-all-to-notion` - Synchronise tout vers Notion
+- `npm run sync-all-from-notion` - Récupère tout depuis Notion
 
-## 🚀 Commandes disponibles
+### Commandes disponibles
 
-```bash
-npm run init-prd        # Créer le PRD initial
-npm run sync-to-notion  # Envoyer vers Notion
-npm run sync-from-notion # Récupérer depuis Notion
-npm start               # Test de connexion
+- `npm run init-prd` - Initialise le fichier PRD.md
+- `npm run init-feature` - **Nouveau** : Crée une nouvelle feature avec template standardisé
+- `npm run sync-to-notion` - Synchronise le PRD local vers Notion
+- `npm run sync-from-notion` - Synchronise depuis Notion vers le PRD local
+- `npm run sync-features-to-notion` - **Nouveau** : Synchronise les features vers Notion
+- `npm run sync-features-from-notion` - **Nouveau** : Synchronise les features depuis Notion
+- `npm run sync-all-to-notion` - **Nouveau** : Synchronise PRD + features vers Notion
+- `npm run sync-all-from-notion` - **Nouveau** : Synchronise PRD + features depuis Notion
+- `npm run format-for-notion` - Formate le PRD selon le rendu Notion (évite les diffs parasites)
+- `npm run test` - Lance les tests unitaires
+- `npm run lint` - Vérifie et corrige le code
+
+## 🧪 Tests & CI/CD
+
+### Tests unitaires
+- Les tests unitaires sont écrits avec [Jest](https://jestjs.io/).
+- Pour lancer tous les tests :
+  ```bash
+  npm run test
+  ```
+- Les tests se trouvent dans `src/__tests__/` ou à côté des modules sous la forme `*.test.js` ou `*.spec.js`.
+- La couverture de code est générée dans le dossier `coverage/`.
+
+### Linting
+- Vérifie la qualité du code avec ESLint et Prettier :
+  ```bash
+  npm run lint
+  ```
+
+### Intégration continue (CI)
+- Un workflow GitHub Actions (`.github/workflows/ci.yml`) exécute automatiquement lint + tests à chaque push ou pull request sur `main` ou `develop`.
+- Le badge de statut CI peut être ajouté en haut du README si besoin.
+
+### Objectifs
+- 80% de couverture sur le code critique (mapping, transformation, gestion des erreurs)
+- 100% sur les fonctions de mapping/transformation
+- Déploiement automatique sur Vercel à chaque merge sur `main`
+
+## 📋 Gestion des Features
+
+### Structure des features
+
+Les features sont stockées dans `docs/features/` sous forme de fichiers Markdown avec front matter :
+
+```markdown
+<!--
+FRONT MATTER - Propriétés synchronisées avec Notion
+====================================================
+status: Draft | Review | Validated | Obsolete
+plans: ["Free", "Growth", "Pro", "Enterprise"]
+user_rights: ["Superadmin", "Admin", "Standard", "Restricted", "Guest"]
+limite: Texte libre pour décrire les limitations (optionnel)
+-->
+---
+status: Draft
+plans: ["Free", "Growth"]
+user_rights: ["Admin", "Standard"]
+limite: "100 requests/hour"
+---
+
+# Nom de la feature
+
+Contenu de la feature...
 ```
 
-## 📋 Étapes de configuration
+### Champs de métadonnées
 
-### 1. Créer l'intégration Notion
-- Aller sur https://developers.notion.com/
-- Créer "GS Sync Connect Catalog"
-- Copier le token
+- **status** : `Draft`, `Review`, `Validated`, `Obsolete`
+- **plans** : Tableau des plans concernés (`Free`, `Growth`, `Pro`, `Enterprise`)
+- **user_rights** : Droits utilisateur requis (`Superadmin`, `Admin`, `Standard`, `Restricted`, `Guest`)
+- **limite** : Limitations spécifiques (optionnel)
 
-### 2. Configurer la page Notion
-- Créer une page "PRD - GS Sync Connect Catalog"
-- Partager avec l'intégration
-- L'ID de page est déjà configuré
+### Template standardisé
 
-### 3. Premier usage
+Le template inclut automatiquement :
+- Vue d'ensemble et objectifs
+- Description détaillée avec critères d'acceptation
+- Spécifications techniques (architecture, APIs, modèles)
+- Spécifications UX/UI
+- Tests et validation
+- Métriques de succès
+- Plan de déploiement
+- Ressources et notes
+
+### Synchronisation Notion
+
+Les features sont synchronisées vers une database Notion dédiée avec :
+- **Name** : Nom de la feature
+- **Status** : Statut (Select)
+- **Module** : Nom du projet (GS Sync Connect Catalog)
+- **Plans** : Plans concernés (MultiSelect)
+- **User Rights** : Droits utilisateur requis (MultiSelect)
+- **Limite** : Limitations (Text)
+
+### Exemple d'utilisation
+
 ```bash
-cp .env.example .env
-# Ajouter le token dans .env
-npm install
-npm run init-prd
-npm run sync-to-notion
+# Créer une nouvelle feature
+npm run init-feature
+# Nom : "Authentification OAuth"
+
+# Éditer le fichier créé
+# docs/features/authentification-oauth.md
+
+# Synchroniser vers Notion
+npm run sync-features-to-notion
+
+# Collaborer dans Notion...
+
+# Récupérer les changements
+npm run sync-features-from-notion
 ```
 
-✅ **Ton PRD sera synchronisé avec Notion !** 
+---
+
+*Ce document sera mis à jour au fur et à mesure du développement du projet.* 
