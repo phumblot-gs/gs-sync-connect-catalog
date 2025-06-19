@@ -117,33 +117,41 @@ class NotionClient {
   /**
    * Met à jour le contenu PRD dans la database
    */
-  async updateProjectContent(content) {
+  async updateProjectContent(content, frontMatter = {}) {
     try {
       console.log(`📝 Mise à jour du PRD "${this.projectName}"...`);
       
       // Récupérer ou créer l'entrée
       const projectEntry = await this.getOrCreateProjectEntry();
       
-      // Mettre à jour les propriétés de l'entrée
-      await this.notion.pages.update({
-        page_id: projectEntry.id,
-        properties: {
-          'Status': {
-            select: {
-              name: 'draft'
-            }
-          },
-          'Description': {
-            rich_text: [
-              {
-                text: {
-                  content: 'Application de synchronisation entre comptes Grand Shooting avec monitoring - Mis à jour automatiquement'
-                }
-              }
-            ]
-          }
-        }
-      });
+      // Préparer les propriétés à mettre à jour
+      const properties = {};
+      
+      if (frontMatter.status) {
+        properties['Status'] = {
+          select: { name: frontMatter.status }
+        };
+      }
+      
+      if (frontMatter.application) {
+        properties['Application'] = {
+          select: { name: frontMatter.application }
+        };
+      }
+      
+      if (frontMatter.description) {
+        properties['Description'] = {
+          rich_text: [{ text: { content: frontMatter.description } }]
+        };
+      }
+      
+      // Mettre à jour les propriétés de l'entrée seulement si on a des changements
+      if (Object.keys(properties).length > 0) {
+        await this.notion.pages.update({
+          page_id: projectEntry.id,
+          properties
+        });
+      }
       
       // Supprimer le contenu existant de la page
       await this.clearPageContent(projectEntry.id);

@@ -1,3 +1,16 @@
+<!--
+FRONT MATTER - Propriétés synchronisées avec Notion
+====================================================
+application: Service | Frontend | Backend
+status: Draft | Review | Validated | Obsolete
+description: Description courte du projet
+-->
+---
+application: Service
+status: Review
+description: "Service de synchronisation unidirectionnelle des données entre deux comptes Grand Shooting via API, avec interface de gestion et monitoring"
+---
+
 # Project Requirement Description (PRD)
 
 

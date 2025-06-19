@@ -19,8 +19,11 @@ class NotionSync {
       const prdContent = await fs.readFile(this.localPrdPath, 'utf8');
       console.log('📖 PRD local lu avec succès');
       
-      // Envoyer vers la database Notion
-      await this.notionClient.updateProjectContent(prdContent);
+      // Parser le front matter et le contenu
+      const { frontMatter, markdownContent } = this.parseFrontMatter(prdContent);
+      
+      // Envoyer vers la database Notion avec les propriétés
+      await this.notionClient.updateProjectContent(markdownContent, frontMatter);
       
       console.log('✅ Synchronisation vers la database Notion terminée !');
       return true;
@@ -46,6 +49,9 @@ class NotionSync {
       // Récupérer tous les blocks récursivement
       const blocks = await this.getAllBlocks(entry.id);
       
+      // Extraire les propriétés pour le front matter
+      const frontMatter = this.extractFrontMatter(entry);
+      
       // Convertir les blocs en Markdown
       let markdown = this.blocksToMarkdown(blocks);
       
@@ -55,11 +61,11 @@ class NotionSync {
         .replace(/^\n+/, '') // Supprimer les sauts de ligne en début de document
         .trim(); // Supprimer les espaces en fin de document
       
-      // Ajouter le saut de ligne final
-      markdown += '\n';
+      // Générer le contenu complet avec front matter
+      const fullContent = this.generateFileContent(frontMatter, markdown);
       
       // Sauvegarder localement
-      await fs.writeFile(this.localPrdPath, markdown, 'utf8');
+      await fs.writeFile(this.localPrdPath, fullContent, 'utf8');
       
       console.log('✅ Synchronisation depuis la database Notion terminée !');
       return true;
@@ -67,6 +73,92 @@ class NotionSync {
       console.error('❌ Erreur de synchronisation:', error.message);
       return false;
     }
+  }
+
+  /**
+   * Parse le front matter d'un fichier markdown
+   */
+  parseFrontMatter(content) {
+    // Ignorer les commentaires HTML avant le front matter
+    const cleanContent = content.replace(/<!--[\s\S]*?-->\s*\n/g, '');
+    
+    const frontMatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
+    const match = cleanContent.match(frontMatterRegex);
+    
+    if (match) {
+      const frontMatterText = match[1];
+      const markdownContent = match[2];
+      
+      // Parser le YAML simple
+      const frontMatter = {};
+      const lines = frontMatterText.split('\n');
+      
+      for (const line of lines) {
+        const colonIndex = line.indexOf(':');
+        if (colonIndex > 0) {
+          const key = line.slice(0, colonIndex).trim();
+          const value = line.slice(colonIndex + 1).trim();
+          frontMatter[key] = value.replace(/['"]/g, '');
+        }
+      }
+      
+      return { frontMatter, markdownContent };
+    }
+    
+    return { frontMatter: {}, markdownContent: cleanContent };
+  }
+
+  /**
+   * Extrait les propriétés Notion pour le front matter
+   */
+  extractFrontMatter(entry) {
+    const properties = entry.properties;
+    const frontMatter = {};
+    
+    if (properties.Status?.select?.name) {
+      frontMatter.status = properties.Status.select.name;
+    }
+    
+    if (properties.Application?.select?.name) {
+      frontMatter.application = properties.Application.select.name;
+    }
+    
+    if (properties.Description?.rich_text?.[0]?.text?.content) {
+      frontMatter.description = properties.Description.rich_text[0].text.content;
+    }
+    
+    return frontMatter;
+  }
+
+  /**
+   * Génère le contenu complet du fichier avec front matter
+   */
+  generateFileContent(frontMatter, markdownContent) {
+    let content = '<!--\n';
+    content += 'FRONT MATTER - Propriétés synchronisées avec Notion\n';
+    content += '====================================================\n';
+    content += 'application: Service | Frontend | Backend\n';
+    content += 'status: Draft | Review | Validated | Obsolete\n';
+    content += 'description: Description courte du projet\n';
+    content += '-->\n';
+    content += '---\n';
+    
+    if (frontMatter.application) {
+      content += `application: ${frontMatter.application}\n`;
+    }
+    
+    if (frontMatter.status) {
+      content += `status: ${frontMatter.status}\n`;
+    }
+    
+    if (frontMatter.description) {
+      content += `description: "${frontMatter.description}"\n`;
+    }
+    
+    content += '---\n\n';
+    content += markdownContent;
+    
+    return content;
   }
 
   /**

@@ -1,7 +1,20 @@
 const fs = require('fs').promises;
 const path = require('path');
 
-const prdTemplate = `# Project Requirement Description (PRD)
+const prdTemplate = `<!--
+FRONT MATTER - Propriétés synchronisées avec Notion
+====================================================
+application: Service | Frontend | Backend
+status: Draft | Review | Validated | Obsolete
+description: Description courte du projet
+-->
+---
+application: Service
+status: Draft
+description: "Application de synchronisation entre comptes Grand Shooting avec monitoring"
+---
+
+# Project Requirement Description (PRD)
 ## Application de Synchronisation Grand Shooting
 
 ### 📋 Informations Générales

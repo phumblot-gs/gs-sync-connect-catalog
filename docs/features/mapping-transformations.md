@@ -7,8 +7,8 @@ user_rights: ["Superadmin", "Admin", "Standard", "Restricted", "Guest"]
 limite: Texte libre pour décrire les limitations (optionnel)
 -->
 ---
-status: Draft
-plans: ["Free"]
+status: Review
+plans: ["Free","Growth"]
 user_rights: ["Admin", "Standard"]
 ---
 

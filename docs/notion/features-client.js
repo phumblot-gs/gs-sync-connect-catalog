@@ -223,6 +223,22 @@ class NotionFeaturesClient {
     try {
       let hasMore = true;
       let startCursor = undefined;
+      let total = 0;
+      let deleted = 0;
+      
+      // Compter le nombre total de blocks à supprimer (pour la progression)
+      {
+        let cursor = undefined;
+        do {
+          const resp = await this.notion.blocks.children.list({ block_id: pageId, start_cursor: cursor });
+          total += resp.results.length;
+          cursor = resp.has_more ? resp.next_cursor : undefined;
+        } while (cursor);
+      }
+      
+      if (total > 0) {
+        console.log(`🗑️ Suppression de ${total} blocks...`);
+      }
       
       while (hasMore) {
         const response = await this.notion.blocks.children.list({ 
@@ -236,11 +252,26 @@ class NotionFeaturesClient {
         for (let i = 0; i < blocks.length; i += 2) {
           const batch = blocks.slice(i, i + 2);
           await Promise.all(batch.map(block => safeDelete(this.notion, block.id)));
+          deleted += batch.length;
+          
+          // Afficher la progression si on a plus de 10 blocks
+          if (total > 10) {
+            process.stdout.write(`\r   Progression: ${Math.min(deleted, total)}/${total} blocks supprimés...`);
+          }
+          
           await wait(400);
         }
         
         hasMore = response.has_more;
         startCursor = response.next_cursor;
+      }
+      
+      if (total > 10) {
+        process.stdout.write('\n');
+      }
+      
+      if (total > 0) {
+        console.log('🗑️ Contenu existant supprimé');
       }
     } catch (error) {
       console.error('❌ Erreur lors de la suppression:', error.message);
