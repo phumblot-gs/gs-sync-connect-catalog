@@ -83,10 +83,20 @@ Le NOTION_PAGE_ID est : `216582cb2b9c8045881ae17bc1b78385`
 ## 🔄 Workflow de développement
 
 1. Modifier le `PRD.md` localement
-2. Exécuter `npm run sync-to-notion`
-3. Le PRD est automatiquement créé/mis à jour dans ta database Notion
-4. L'équipe peut collaborer directement dans l'entrée de la database
-5. Synchroniser les changements avec `npm run sync-from-notion`
+2. **Optionnel** : Exécuter `npm run format-for-notion` pour normaliser le format avant commit
+3. Exécuter `npm run sync-to-notion`
+4. Le PRD est automatiquement créé/mis à jour dans ta database Notion
+5. L'équipe peut collaborer directement dans l'entrée de la database
+6. Synchroniser les changements avec `npm run sync-from-notion`
+
+### Commandes disponibles
+
+- `npm run init-prd` - Initialise le fichier PRD.md
+- `npm run sync-to-notion` - Synchronise le PRD local vers Notion
+- `npm run sync-from-notion` - Synchronise depuis Notion vers le PRD local
+- `npm run format-for-notion` - **Nouveau** : Formate le PRD selon le rendu Notion (évite les diffs parasites)
+- `npm run test` - Lance les tests unitaires
+- `npm run lint` - Vérifie et corrige le code
 
 ## 🧪 Tests & CI/CD
 

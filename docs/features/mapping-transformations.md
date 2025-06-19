@@ -67,8 +67,7 @@ Le mapping et les règles sont stockés en base, par exemple sous forme de JSON 
 
 ## Exécution des règles
 
-Lors de la synchronisation, chaque champ est transformé selon la liste des règles définies dans le mapping, dans l'ordre.
-
+Lors d'une synchronisation, chaque champ est transformé selon la liste des règles définies dans le mapping selon un ordre établi.
 ---
 
 ## Exemples concrets

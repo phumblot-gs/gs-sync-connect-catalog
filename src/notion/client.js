@@ -190,6 +190,21 @@ class NotionClient {
         }
       }
     }
+    
+    // Masquer les warnings Notion pendant la suppression
+    const originalWarn = console.warn;
+    console.warn = function (...args) {
+      // Convertir tous les arguments en string pour la détection
+      const message = args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg)).join(' ');
+      // Filtrer les warnings Notion liés aux conflits
+      if (message.includes('@notionhq/client') || 
+          message.includes('request fail') || 
+          message.includes('conflict_error')) {
+        return; // Masquer ces warnings
+      }
+      originalWarn.apply(console, args);
+    };
+    
     try {
       let hasMore = true;
       let startCursor = undefined;
@@ -208,9 +223,9 @@ class NotionClient {
       while (hasMore) {
         const response = await this.notion.blocks.children.list({ block_id: pageId, start_cursor: startCursor });
         const blocks = response.results;
-        // Suppression par lots de 3 en parallèle, avec retry et délai
-        for (let i = 0; i < blocks.length; i += 3) {
-          const batch = blocks.slice(i, i + 3);
+        // Suppression par lots de 2 en parallèle, avec retry et délai
+        for (let i = 0; i < blocks.length; i += 2) {
+          const batch = blocks.slice(i, i + 2);
           await Promise.all(batch.map(block => safeDelete(this.notion, block.id)));
           deleted += batch.length;
           process.stdout.write(`\r   Progression: ${Math.min(deleted, total)}/${total} blocks supprimés...`);
@@ -224,6 +239,9 @@ class NotionClient {
     } catch (error) {
       console.error('❌ Erreur lors de la suppression:', error.message);
       throw error;
+    } finally {
+      // Restaurer console.warn
+      console.warn = originalWarn;
     }
   }
 

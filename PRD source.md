@@ -8,11 +8,16 @@
 
 ## 🎯 Objectif du Projet
 
-Service de synchronisation unidirectionnelle des données entre deux comptes Grand Shooting via API, avec interface de gestion et monitoring.
-Dans certains cas, un client peut avoir plusieurs comptes Grand Shooting. Pour ce type de client, il peut être intéressant de synchroniser les catalogues entre les différents comptes Grand Shooting, de telle sorte que le compte principal soit régulièrement mis à jour avec les données catalogues du client et que ces mises à jour soient répercutées au fil du lot sur les autres comptes Grand Shooting.
+Service de synchronisation unidirectionnelle des données entre deux comptes Grand Shooting via API, avec interface de gestion et monitoring. 
+
+Dans certains cas, un client peut avoir plusieurs comptes Grand Shooting. Pour ce type de client, il peut être intéressant de synchroniser les catalogues entre les différents comptes Grand Shooting, de telle sorte que le compte principal soit régulièrement mis à jour avec les données catalogues du client et que ces mises à jour soient répercutées au fil du lot sur les autres comptes Grand Shooting. 
+
 La synchronisation est donc unidirectionnelle. Les données du compte principal sont synchronisées vers un compte secondaire. Si jamais le client possède plusieurs comptes secondaires, la mise à jour est en étoile, c'est-à-dire qu'il faut créer autant de synchronisations entre le compte principal et tous les comptes secondaires associés à ce compte principal.
+
 Le mécanisme de synchronisation s'appuie sur les webhooks Grand Shooting pour la création, la modification et la suppression de références dans le catalogue du compte principal. Ce module de synchronisation expose donc une API qui accepte les notifications du webhook. Les notifications sont prises en charge dans une pile, traitées au fil de l'eau, pour mettre à jour le compte secondaire.
+
 le mécanisme de synchronisation s'appuie aussi sur l'API Grand Shooting pour requêter le compte principal à fréquence paramétrable pour mettre à jour par batch le compte secondaire. Les 2 mécanismes peuvent être actifs simultanément ou il est possible de n'activer qu'un seul des 2 mécanismes. le paramétrage est défini à la maille d'une synchronisation.
+
 Le service de synchronisation propose également une fonction d'initialisation qui consiste à réinitialiser le catalogue du compte secondaire avec l'intégralité du catalogue du compte principal. 
 
 ## 📖 Description Détaillée
@@ -36,9 +41,9 @@ Le service permet de :
 
 ### Frontend : Interface Principale
 
-- [ ] Authentification via Google Auth
-- [ ] Dashboard avec liste des synchronisations actives et état de la pile de traitements
-- [ ] Détails d'une synchronisation : volumétrie et réinitialisation du catalogue
+- [x] Authentification via Google Auth
+- [x] Dashboard avec liste des synchronisations actives et état de la pile de traitements
+- [x] Détails d'une synchronisation : volumétrie et réinitialisation du catalogue
 - [ ] Logs des traitements exécutés sur les 7 derniers jours et redo de traitements
 - [ ] Logs des erreurs de traitements sur les 7 derniers jours redo de traitements
 
@@ -79,7 +84,6 @@ Le service permet de :
 - **Queue/traitement asynchrone** :
   - Pile des traitements centralisée dans une table PostgreSQL (Supabase)
   - Orchestration via Edge Functions Supabase ou Vercel Cron pour le traitement asynchrone
-
 - **Notifications** : Email (Resend ou SendGrid), Slack (webhooks)
 - **Monitoring** : Statistiques et logs stockés dans Supabase, visualisés dans le dashboard Next.js
 
@@ -91,7 +95,6 @@ Le service permet de :
   - **Dev** : branches de développement, déploiement preview sur Vercel
   - **Test** : branche dédiée, base de données de test, accès restreint
   - **Prod** : branche main, base de données de production, monitoring renforcé
-
 - **Secrets** : stockés dans Vercel (Environment Variables) et Supabase (Project Settings)
 - **CI/CD** : GitHub Actions pour automatiser les tests et le déploiement
 
@@ -100,26 +103,21 @@ Le service permet de :
 - **Pile centralisée** :
   - Une table PostgreSQL "processing_queue" stocke tous les jobs à traiter (création, modification, suppression)
   - Chaque job contient : type (webhook/batch), id de la synchronisation, payload, statut, timestamps, nombre de tentatives
-
 - **Alimentation de la pile** :
   - **Webhooks** : chaque notification Grand Shooting crée un job dans la pile
   - **Batchs** : chaque import programmé via l'API Grand Shooting crée un ou plusieurs jobs dans la pile
-
 - **Traitement asynchrone** :
   - Un worker (Edge Function Supabase ou Cron Vercel) traite la pile par lots, en respectant un quota de jobs par synchronisation active
   - Un système de "fair scheduling" garantit qu'aucune synchronisation ne monopolise toutes les ressources :
     - Le worker sélectionne à chaque itération un nombre limité de jobs par synchronisation (round-robin)
     - Les jobs en échec sont réessayés une fois (1 retry maximum), puis marqués en erreur
-
 - **Scalabilité** :
   - Le traitement est stateless, plusieurs workers peuvent tourner en parallèle
   - Les verrous sont gérés au niveau de la base (row-level locking) pour éviter les conflits
-
 - **Monitoring** :
   - Dashboard temps réel sur l'état de la pile, les jobs en cours, les erreurs, la volumétrie par synchronisation
   - Alertes email/Slack en cas de blocage ou d'erreur répétée
   - historique du nombre de messages reçus et traités par heure et par compte principal conservé sans limite de temps.
-
 - **indexation, purge et monitoring** :
 - La pile (table PostgreSQL) est indexée pour garantir la performance.
 - Les traitements de plus de 7 jours sont automatiquement purgés de la pile.
@@ -129,7 +127,6 @@ Le service permet de :
 - Pour chaque synchronisation par batch, la connexion à l'API Grand Shooting se fait avec **deux tokens Bearer distincts** :
   - Un token Bearer pour le compte principal (lecture du catalogue source)
   - Un token Bearer pour le compte secondaire (écriture dans le catalogue cible)
-
 - Les tokens sont stockés de façon sécurisée (chiffrés en base, jamais exposés côté client)
 - Chaque synchronisation référence explicitement les deux tokens nécessaires à son exécution
 
@@ -153,7 +150,6 @@ Le service permet de :
 - **Connexion à l'API Grand Shooting** :
   - L'authentification pour la synchronisation (batch ou webhook) se fait uniquement par **token Bearer** (clé API fournie par Grand Shooting pour chaque compte principal et secondaire).
   - Il n'y a pas d'utilisation d'OAuth pour accéder à l'API Grand Shooting.
-
 - **Connexion des utilisateurs à l'interface de gestion** :
   - L'authentification des utilisateurs humains (accès au frontend, gestion des synchronisations, monitoring) se fait via **OAuth** (Google, etc.) grâce à Supabase Auth.
   - Cela permet une gestion sécurisée et moderne des accès utilisateurs, indépendante des tokens API utilisés pour la synchronisation.
@@ -169,6 +165,7 @@ Le service permet de :
 - Chaque utilisateur peut choisir de recevoir ou non les emails d'alerte.
 - Au maximum 1 alerte est envoyée par heure à chaque utilisateur
 - Les alertes contiennent les informations nécessaires au diagnostic (comptes concernés, volumétrie, logs).
+
 
 ## 📊 Spécifications des Données
 
@@ -225,7 +222,6 @@ Chaque synchronisation traite des listes de références issues du catalogue pri
   - `api_key` (clé API)
   - `client_name` (nom du client)
   - Rôle : principal ou secondaire
-
 - **Synchronisation** :
   - Active ou non
   - Liée à un compte principal et un ou plusieurs comptes secondaires
@@ -240,7 +236,6 @@ Chaque synchronisation traite des listes de références issues du catalogue pri
   - Rôle : `standard` ou `admin`
     - `admin` : gestion des accès utilisateurs, création/modification/suppression des synchronisations
     - `standard` : accès à la consultation, monitoring, relance de synchronisation
-
 - Les opérations de configuration sont strictement réservées aux admins.
 - Authentification via Supabase Auth (Google, email, etc.)
 - Gestion des permissions et audit des actions sensibles
@@ -248,6 +243,7 @@ Chaque synchronisation traite des listes de références issues du catalogue pri
 ### Gestion du mapping des champs (principal → secondaire)
 
 Pour chaque synchronisation, il est nécessaire de définir un mapping entre les champs du compte principal et ceux du compte secondaire. Ce mapping permet d'adapter la structure des données, de gérer les différences de nomenclature ou de format, et d'appliquer des règles de transformation si besoin.
+
 - **Structure du mapping** :
   - Pour chaque synchronisation, une table ou un objet de mapping est associé, par exemple :
 
@@ -282,32 +278,32 @@ Pour chaque synchronisation, il est nécessaire de définir un mapping entre les
 ## 🔄 Flux de Synchronisation
 
 1. **Configuration initiale**
-  - Paramétrage des synchronisations : compte principal et compte secondaire
-  - Définition des règles de filtrage (par défaut pas de filtrage)
-  - Mapping des champs (par défaut pas de mapping pour une synchronisation sans modification)
-  - Définition des règles de transformation (par défaut pas de transformation)
+   - Paramétrage des synchronisations : compte principal et compte secondaire
+   - Définition des règles de filtrage (par défaut pas de filtrage)
+   - Mapping des champs (par défaut pas de mapping pour une synchronisation sans modification)
+   - Définition des règles de transformation (par défaut pas de transformation)
 
 2. **Synchronisation en temps réel**
-  - Webhooks pour les modifications
-  - Application des règles de filtrage
-  - Queue de traitement asynchrone
-  - Filtrage, Mapping et transformation des données
+   - Webhooks pour les modifications
+   - Application des règles de filtrage
+   - Queue de traitement asynchrone
+   - Filtrage, Mapping et transformation des données
 
 3. **Synchronisation batch**
-  - Récupération des dernières données modifiées sur le compte principal (delta)
-  - Application des règles de filtrage
-  - Queue de traitement asynchrone
-
+   - Récupération des dernières données modifiées sur le compte principal (delta)
+   - Application des règles de filtrage
+   - Queue de traitement asynchrone
+   
 4. **Traitement de la Queue de traitement**
-  - regroupement des traitements par paquets de taille < N traitements destinés à un même compte secondaire
-  - mapping et transformation selon la configuration de la synchronisation associée aux traitements
-  - Envoi vers le compte cible avec retry
-  - Loggin détaillé des opérations
+   - regroupement des traitements par paquets de taille < N traitements destinés à un même compte secondaire
+   - mapping et transformation selon la configuration de la synchronisation associée aux traitements
+   - Envoi vers le compte cible avec retry
+   - Loggin détaillé des opérations
 
 5. **Monitoring et reporting**
-  - Calcul des métriques en temps réel
-  - Génération de rapports quotidiens
-  - Possibilité de rejouer des traitements exécutés ou en erreur
+   - Calcul des métriques en temps réel
+   - Génération de rapports quotidiens
+   - Possibilité de rejouer des traitements exécutés ou en erreur
 
 ## 🛡️ Sécurité et Conformité
 

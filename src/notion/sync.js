@@ -45,10 +45,21 @@ class NotionSync {
       const { entry } = await this.notionClient.getProjectContent();
       // Récupérer tous les blocks récursivement
       const blocks = await this.getAllBlocks(entry.id);
+      
       // Convertir les blocs en Markdown
-      const markdown = this.blocksToMarkdown(blocks);
+      let markdown = this.blocksToMarkdown(blocks);
+      
+      // Normaliser l'espacement final
+      markdown = markdown
+        .replace(/\n{3,}/g, '\n\n') // Remplacer 3+ sauts de ligne consécutifs par 2
+        .replace(/^\n+/, '') // Supprimer les sauts de ligne en début de document
+        .trim(); // Supprimer les espaces en fin de document
+      
+      // Ajouter le saut de ligne final
+      markdown += '\n';
+      
       // Sauvegarder localement
-      await fs.writeFile(this.localPrdPath, markdown.trim() + '\n', 'utf8');
+      await fs.writeFile(this.localPrdPath, markdown, 'utf8');
       
       console.log('✅ Synchronisation depuis la database Notion terminée !');
       return true;
@@ -88,21 +99,46 @@ class NotionSync {
   blocksToMarkdown(blocks, depth = 0, listType = null, numIndex = 1) {
     let markdown = '';
     const indent = '  '.repeat(depth);
+    
     for (let i = 0; i < blocks.length; i++) {
       const block = blocks[i];
+      const nextBlock = blocks[i + 1];
+      const prevBlock = blocks[i - 1];
+      
       switch (block.type) {
         case 'heading_1':
-          markdown += `\n# ${this.richTextToMarkdown(block.heading_1.rich_text)}\n\n`;
+          // Ligne vierge avant le titre (sauf si premier block au niveau racine)
+          if (i > 0 || depth > 0) markdown += '\n\n';
+          markdown += `# ${this.richTextToMarkdown(block.heading_1.rich_text)}`;
+          // Ligne vierge après le titre
+          markdown += '\n';
           break;
+          
         case 'heading_2':
-          markdown += `\n## ${this.richTextToMarkdown(block.heading_2.rich_text)}\n\n`;
+          if (i > 0 || depth > 0) markdown += '\n\n';
+          markdown += `## ${this.richTextToMarkdown(block.heading_2.rich_text)}`;
+          markdown += '\n';
           break;
+          
         case 'heading_3':
-          markdown += `\n### ${this.richTextToMarkdown(block.heading_3.rich_text)}\n\n`;
+          if (i > 0 || depth > 0) markdown += '\n\n';
+          markdown += `### ${this.richTextToMarkdown(block.heading_3.rich_text)}`;
+          markdown += '\n';
           break;
+          
         case 'paragraph':
-          markdown += `\n${this.richTextToMarkdown(block.paragraph.rich_text)}\n`;
+          const paragraphText = this.richTextToMarkdown(block.paragraph.rich_text);
+          if (paragraphText.trim()) {
+            // Ligne vierge avant le paragraphe si nécessaire
+            if (i > 0 && prevBlock && !this.isListItem(prevBlock)) {
+              markdown += '\n';
+            } else if (i > 0) {
+              markdown += '\n';
+            }
+            markdown += paragraphText;
+          }
           break;
+          
         case 'bulleted_list_item':
           markdown += `\n${indent}- ${this.richTextToMarkdown(block.bulleted_list_item.rich_text)}`;
           if (block.bulleted_list_item.children && block.bulleted_list_item.children.length > 0) {
@@ -110,21 +146,37 @@ class NotionSync {
           } else if (block.children && block.children.length > 0) {
             markdown += this.blocksToMarkdown(block.children, depth + 1, 'bulleted');
           }
+          // Ajouter une ligne vierge après la liste si c'est le dernier item de la liste
+          if (!nextBlock || !this.isListItem(nextBlock)) {
+            markdown += '\n';
+          }
           break;
+          
         case 'numbered_list_item':
-          // Trouver la position réelle dans la séquence de la liste numérotée
-          let number = numIndex;
-          // Chercher les blocks précédents de même type pour incrémenter
-          if (listType !== 'numbered') number = 1;
-          markdown += `\n${indent}${number}. ${this.richTextToMarkdown(block.numbered_list_item.rich_text)}`;
+          // Compter les items de liste numérotée précédents au même niveau
+          let actualNumber = 1;
+          for (let j = 0; j < i; j++) {
+            if (blocks[j].type === 'numbered_list_item') {
+              actualNumber++;
+            }
+          }
+          // Si on est dans une sous-liste, commencer à 1
+          if (listType === 'numbered') {
+            actualNumber = numIndex;
+          }
+          
+          markdown += `\n${indent}${actualNumber}. ${this.richTextToMarkdown(block.numbered_list_item.rich_text)}`;
           if (block.numbered_list_item.children && block.numbered_list_item.children.length > 0) {
             markdown += this.blocksToMarkdown(block.numbered_list_item.children, depth + 1, 'numbered', 1);
           } else if (block.children && block.children.length > 0) {
             markdown += this.blocksToMarkdown(block.children, depth + 1, 'numbered', 1);
           }
-          // Incrémenter l'index pour le prochain item de la même liste
-          numIndex++;
+          // Ajouter une ligne vierge après la liste si c'est le dernier item de la liste
+          if (!nextBlock || !this.isListItem(nextBlock)) {
+            markdown += '\n';
+          }
           break;
+          
         case 'to_do':
           const checked = block.to_do.checked ? 'x' : ' ';
           markdown += `\n${indent}- [${checked}] ${this.richTextToMarkdown(block.to_do.rich_text)}`;
@@ -133,28 +185,45 @@ class NotionSync {
           } else if (block.children && block.children.length > 0) {
             markdown += this.blocksToMarkdown(block.children, depth + 1);
           }
-          break;
-        case 'image':
-          if (block.image.type === 'external') {
-            markdown += `\n${indent}![${block.image.caption?.[0]?.plain_text || ''}](${block.image.external.url})`;
-          } else if (block.image.type === 'file') {
-            markdown += `\n${indent}![${block.image.caption?.[0]?.plain_text || ''}](${block.image.file.url})`;
+          // Ajouter une ligne vierge après la liste de todos si c'est le dernier item
+          if (!nextBlock || !this.isListItem(nextBlock)) {
+            markdown += '\n';
           }
           break;
-        case 'code':
-          markdown += `\n${indent}\`\`\`${block.code.language || ''}\n${block.code.rich_text?.map(rt => rt.plain_text || rt.text?.content || '').join('') || ''}\n\`\`\`\n`;
+          
+        case 'image':
+          // Ligne vierge avant l'image
+          if (i > 0) markdown += '\n';
+          if (block.image.type === 'external') {
+            markdown += `${indent}![${block.image.caption?.[0]?.plain_text || ''}](${block.image.external.url})`;
+          } else if (block.image.type === 'file') {
+            markdown += `${indent}![${block.image.caption?.[0]?.plain_text || ''}](${block.image.file.url})`;
+          }
+          // Ligne vierge après l'image
+          if (nextBlock) markdown += '\n';
           break;
+          
+        case 'code':
+          // Ligne vierge avant le bloc de code
+          if (i > 0) markdown += '\n\n';
+          markdown += `${indent}\`\`\`${block.code.language || ''}\n${block.code.rich_text?.map(rt => rt.plain_text || rt.text?.content || '').join('') || ''}\n\`\`\``;
+          // Ligne vierge après le bloc de code
+          if (nextBlock) markdown += '\n';
+          break;
+          
         default:
           if (block.children && block.children.length > 0) {
             markdown += this.blocksToMarkdown(block.children, depth);
           }
           break;
       }
-      // Si la liste est numérotée, passer l'index au prochain item
+      
+      // Incrémenter l'index pour les listes numérotées imbriquées
       if (block.type === 'numbered_list_item' && listType === 'numbered') {
         numIndex++;
       }
     }
+    
     return markdown;
   }
 
@@ -163,20 +232,38 @@ class NotionSync {
    */
   richTextToMarkdown(richTextArr) {
     if (!richTextArr || !Array.isArray(richTextArr)) return '';
+    
     return richTextArr.map(rt => {
       let text = rt.plain_text || rt.text?.content || '';
+      
+      // Appliquer les annotations dans un ordre cohérent
       if (rt.annotations) {
-        if (rt.annotations.bold) text = `**${text}**`;
-        if (rt.annotations.italic) text = `*${text}*`;
-        if (rt.annotations.underline) text = `__${text}__`;
-        if (rt.annotations.code) text = '`' + text + '`';
+        if (rt.annotations.code) {
+          text = '`' + text + '`';
+        } else {
+          if (rt.annotations.bold) text = `**${text}**`;
+          if (rt.annotations.italic) text = `*${text}*`;
+          if (rt.annotations.underline) text = `__${text}__`;
+        }
       }
+      
+      // Gérer les liens
       if (rt.href || (rt.text && rt.text.link && rt.text.link.url)) {
         const url = rt.href || rt.text.link.url;
         text = `[${text}](${url})`;
       }
+      
       return text;
     }).join('');
+  }
+
+  // Fonction utilitaire pour détecter si un block est un item de liste
+  isListItem(block) {
+    return block && (
+      block.type === 'bulleted_list_item' || 
+      block.type === 'numbered_list_item' || 
+      block.type === 'to_do'
+    );
   }
 }
 

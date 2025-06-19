@@ -9,6 +9,7 @@
     "sync-from-notion": "node src/notion/sync.js --from-notion",
     "watch": "node src/notion/watch.js",
     "init-prd": "node src/init-prd.js",
+    "format-for-notion": "node src/notion/format-prd.js",
     "test": "jest --coverage",
     "lint": "eslint . --ext .js,.ts,.jsx,.tsx"
   },
