@@ -1,10 +1,10 @@
-const fs = require('fs').promises;
-const path = require('path');
-const readline = require('readline');
+const fs = require("fs").promises;
+const path = require("path");
+const readline = require("readline");
 
 class FeatureInitializer {
   constructor() {
-    this.featuresDir = path.join(__dirname, '../../docs/features');
+    this.featuresDir = path.join(__dirname, "../../docs/features");
   }
 
   /**
@@ -167,11 +167,11 @@ Décrire les écrans et interfaces utilisateur.
   async promptFeatureName() {
     const rl = readline.createInterface({
       input: process.stdin,
-      output: process.stdout
+      output: process.stdout,
     });
 
     return new Promise((resolve) => {
-      rl.question('📝 Nom de la nouvelle feature : ', (answer) => {
+      rl.question("📝 Nom de la nouvelle feature : ", (answer) => {
         rl.close();
         resolve(answer.trim());
       });
@@ -183,19 +183,21 @@ Décrire les écrans et interfaces utilisateur.
    */
   validateFeatureName(featureName) {
     if (!featureName) {
-      throw new Error('Le nom de la feature ne peut pas être vide');
+      throw new Error("Le nom de la feature ne peut pas être vide");
     }
 
     // Nettoyer le nom pour le nom de fichier
     const cleanName = featureName
       .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '') // Supprimer les caractères spéciaux
-      .replace(/\s+/g, '-') // Remplacer les espaces par des tirets
-      .replace(/-+/g, '-') // Supprimer les tirets multiples
-      .replace(/^-|-$/g, ''); // Supprimer les tirets en début/fin
+      .replace(/[^a-z0-9\s-]/g, "") // Supprimer les caractères spéciaux
+      .replace(/\s+/g, "-") // Remplacer les espaces par des tirets
+      .replace(/-+/g, "-") // Supprimer les tirets multiples
+      .replace(/^-|-$/g, ""); // Supprimer les tirets en début/fin
 
     if (!cleanName) {
-      throw new Error('Le nom de la feature contient uniquement des caractères non valides');
+      throw new Error(
+        "Le nom de la feature contient uniquement des caractères non valides",
+      );
     }
 
     return cleanName;
@@ -215,7 +217,7 @@ Décrire les écrans et interfaces utilisateur.
         await fs.access(filePath);
         throw new Error(`La feature "${fileName}" existe déjà`);
       } catch (error) {
-        if (error.code !== 'ENOENT') {
+        if (error.code !== "ENOENT") {
           throw error;
         }
         // Le fichier n'existe pas, on peut continuer
@@ -228,16 +230,21 @@ Décrire les écrans et interfaces utilisateur.
       const template = this.getFeatureTemplate(featureName);
 
       // Créer le fichier
-      await fs.writeFile(filePath, template, 'utf8');
+      await fs.writeFile(filePath, template, "utf8");
 
       console.log(`✅ Feature "${featureName}" créée avec succès !`);
       console.log(`📄 Fichier : docs/features/${fileName}.md`);
-      console.log('💡 Vous pouvez maintenant éditer la feature et la synchroniser avec :');
-      console.log('   npm run sync-features-to-notion');
+      console.log(
+        "💡 Vous pouvez maintenant éditer la feature et la synchroniser avec :",
+      );
+      console.log("   npm run sync-features-to-notion");
 
       return fileName;
     } catch (error) {
-      console.error('❌ Erreur lors de la création de la feature:', error.message);
+      console.error(
+        "❌ Erreur lors de la création de la feature:",
+        error.message,
+      );
       throw error;
     }
   }
@@ -247,14 +254,14 @@ Décrire les écrans et interfaces utilisateur.
    */
   async initializeFeature() {
     try {
-      console.log('🚀 Initialisation d\'une nouvelle feature...');
-      console.log('');
+      console.log("🚀 Initialisation d'une nouvelle feature...");
+      console.log("");
 
       // Demander le nom de la feature
       const featureName = await this.promptFeatureName();
 
       if (!featureName) {
-        console.log('❌ Opération annulée - aucun nom fourni');
+        console.log("❌ Opération annulée - aucun nom fourni");
         return false;
       }
 
@@ -262,7 +269,7 @@ Décrire les écrans et interfaces utilisateur.
       const fileName = await this.createFeatureFile(featureName);
       return fileName;
     } catch (error) {
-      console.error('❌ Erreur:', error.message);
+      console.error("❌ Erreur:", error.message);
       return false;
     }
   }
@@ -279,4 +286,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = FeatureInitializer; 
+module.exports = FeatureInitializer;

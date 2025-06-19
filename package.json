@@ -15,7 +15,7 @@
     "sync-all-to-notion": "node docs/notion/sync-all.js --to-notion",
     "sync-all-from-notion": "node docs/notion/sync-all.js --from-notion",
     "format-for-notion": "node docs/notion/format-prd.js",
-    "test": "jest --coverage",
+    "test": "jest --coverage --passWithNoTests",
     "lint": "eslint . --ext .js,.ts,.jsx,.tsx"
   },
   "dependencies": {

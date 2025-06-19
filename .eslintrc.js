@@ -6,18 +6,18 @@ module.exports = {
     jest: true,
   },
   extends: [
-    'eslint:recommended',
-    'plugin:jest/recommended',
-    'plugin:prettier/recommended',
+    "eslint:recommended",
+    "plugin:jest/recommended",
+    "plugin:prettier/recommended",
   ],
-  plugins: ['jest'],
+  plugins: ["jest"],
   parserOptions: {
     ecmaVersion: 2021,
-    sourceType: 'module',
+    sourceType: "module",
   },
   rules: {
-    'no-unused-vars': 'warn',
-    'no-console': 'off',
+    "no-unused-vars": "warn",
+    "no-console": "off",
   },
-  ignorePatterns: ['node_modules/', 'coverage/', 'dist/'],
+  ignorePatterns: ["node_modules/", "coverage/", "dist/"],
 };
