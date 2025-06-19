@@ -97,6 +97,9 @@ class NotionFeaturesClient {
         },
         'Plans': {
           multi_select: (frontMatter.plans || ['Free']).map(plan => ({ name: plan }))
+        },
+        'User Rights': {
+          multi_select: (frontMatter.userRights || []).map(right => ({ name: right }))
         }
       };
 

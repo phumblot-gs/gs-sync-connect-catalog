@@ -1,6 +1,15 @@
+<!--
+FRONT MATTER - Propriétés synchronisées avec Notion
+====================================================
+status: Draft | Review | Validated | Obsolete
+plans: ["Free", "Growth", "Pro", "Enterprise"]
+user_rights: ["Superadmin", "Admin", "Standard", "Restricted", "Guest"]
+limite: Texte libre pour décrire les limitations (optionnel)
+-->
 ---
 status: Draft
 plans: ["Free"]
+user_rights: ["Admin", "Standard"]
 ---
 
 # Mapping et Transformation

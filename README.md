@@ -171,9 +171,18 @@ NOTION_FEATURES_DATABASE_ID=1a5582cb2b9c807682bef53c030f683b
 Les features sont stockées dans `docs/features/` sous forme de fichiers Markdown avec front matter :
 
 ```markdown
+<!--
+FRONT MATTER - Propriétés synchronisées avec Notion
+====================================================
+status: Draft | Review | Validated | Obsolete
+plans: ["Free", "Growth", "Pro", "Enterprise"]
+user_rights: ["Superadmin", "Admin", "Standard", "Restricted", "Guest"]
+limite: Texte libre pour décrire les limitations (optionnel)
+-->
 ---
 status: Draft
 plans: ["Free", "Growth"]
+user_rights: ["Admin", "Standard"]
 limite: "100 requests/hour"
 ---
 
@@ -186,6 +195,7 @@ Contenu de la feature...
 
 - **status** : `Draft`, `Review`, `Validated`, `Obsolete`
 - **plans** : Tableau des plans concernés (`Free`, `Growth`, `Pro`, `Enterprise`)
+- **user_rights** : Droits utilisateur requis (`Superadmin`, `Admin`, `Standard`, `Restricted`, `Guest`)
 - **limite** : Limitations spécifiques (optionnel)
 
 ### Template standardisé
@@ -207,6 +217,7 @@ Les features sont synchronisées vers une database Notion dédiée avec :
 - **Status** : Statut (Select)
 - **Module** : Nom du projet (GS Sync Connect Catalog)
 - **Plans** : Plans concernés (MultiSelect)
+- **User Rights** : Droits utilisateur requis (MultiSelect)
 - **Limite** : Limitations (Text)
 
 ### Exemple d'utilisation

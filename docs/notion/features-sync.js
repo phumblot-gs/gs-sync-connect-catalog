@@ -111,8 +111,11 @@ class FeaturesSync {
    * Parse le front matter d'un fichier markdown
    */
   parseFrontMatter(content) {
+    // Ignorer les commentaires HTML avant le front matter
+    const cleanContent = content.replace(/<!--[\s\S]*?-->\s*\n/g, '');
+    
     const frontMatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
-    const match = content.match(frontMatterRegex);
+    const match = cleanContent.match(frontMatterRegex);
     
     if (match) {
       const frontMatterText = match[1];
@@ -128,9 +131,16 @@ class FeaturesSync {
           const key = line.slice(0, colonIndex).trim();
           const value = line.slice(colonIndex + 1).trim();
           
-          // Gérer les arrays (plans)
+          // Gérer les arrays (plans, user_rights)
           if (value.startsWith('[') && value.endsWith(']')) {
-            frontMatter[key] = value.slice(1, -1).split(',').map(v => v.trim().replace(/['"]/g, ''));
+            const arrayValue = value.slice(1, -1).split(',').map(v => v.trim().replace(/['"]/g, ''));
+            
+            // Convertir user_rights en userRights pour la compatibilité avec Notion
+            if (key === 'user_rights') {
+              frontMatter.userRights = arrayValue;
+            } else {
+              frontMatter[key] = arrayValue;
+            }
           } else {
             frontMatter[key] = value.replace(/['"]/g, '');
           }
@@ -140,7 +150,7 @@ class FeaturesSync {
       return { frontMatter, markdownContent };
     }
     
-    return { frontMatter: {}, markdownContent: content };
+    return { frontMatter: {}, markdownContent: cleanContent };
   }
 
   /**
@@ -158,6 +168,10 @@ class FeaturesSync {
       frontMatter.plans = properties.Plans.multi_select.map(plan => plan.name);
     }
     
+    if (properties['User Rights']?.multi_select) {
+      frontMatter.userRights = properties['User Rights'].multi_select.map(right => right.name);
+    }
+    
     if (properties.Limite?.rich_text?.[0]?.text?.content) {
       frontMatter.limite = properties.Limite.rich_text[0].text.content;
     }
@@ -169,7 +183,15 @@ class FeaturesSync {
    * Génère le contenu complet du fichier avec front matter
    */
   generateFileContent(frontMatter, markdownContent) {
-    let content = '---\n';
+    let content = '<!--\n';
+    content += 'FRONT MATTER - Propriétés synchronisées avec Notion\n';
+    content += '====================================================\n';
+    content += 'status: Draft | Review | Validated | Obsolete\n';
+    content += 'plans: ["Free", "Growth", "Pro", "Enterprise"]\n';
+    content += 'user_rights: ["Superadmin", "Admin", "Standard", "Restricted", "Guest"]\n';
+    content += 'limite: Texte libre pour décrire les limitations (optionnel)\n';
+    content += '-->\n';
+    content += '---\n';
     
     if (frontMatter.status) {
       content += `status: ${frontMatter.status}\n`;
@@ -177,6 +199,10 @@ class FeaturesSync {
     
     if (frontMatter.plans && frontMatter.plans.length > 0) {
       content += `plans: [${frontMatter.plans.map(p => `"${p}"`).join(', ')}]\n`;
+    }
+    
+    if (frontMatter.userRights && frontMatter.userRights.length > 0) {
+      content += `user_rights: [${frontMatter.userRights.map(r => `"${r}"`).join(', ')}]\n`;
     }
     
     if (frontMatter.limite) {
