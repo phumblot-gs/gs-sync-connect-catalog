@@ -1,10 +1,12 @@
 # Project Requirement Description (PRD)
 
+
 ## 📋 Informations Générales
 
 - **Nom du projet** : GS Sync Connect Catalog
 - **Date de création** : 18/07/2024
 - **Responsable produit** : Pierre Humblot-Ferrero
+
 
 ## 🎯 Objectif du Projet
 
@@ -32,7 +34,9 @@ Le service permet de :
 - Envoyer un email aux utilisateurs qui ont accès au frontend pour alerter lorsqu'il y a des erreurs
 - Monitorer les volumes de données synchronisées
 
+
 ## 🔧 Fonctionnalités Principales
+
 
 ### Frontend : Interface Principale
 
@@ -41,6 +45,7 @@ Le service permet de :
 - [ ] Détails d'une synchronisation : volumétrie et réinitialisation du catalogue
 - [ ] Logs des traitements exécutés sur les 7 derniers jours et redo de traitements
 - [ ] Logs des erreurs de traitements sur les 7 derniers jours redo de traitements
+
 
 ### Frontend : Interface de Configuration
 
@@ -51,6 +56,7 @@ Le service permet de :
 - [ ] Activation et Planification des synchronisations par batch (fréquence, horaires)
 - [ ] Configuration des alertes email et slack
 
+
 ### Moteur de Synchronisation
 
 - [ ] Synchronisation unidirectionnelle des données
@@ -60,6 +66,7 @@ Le service permet de :
 - [ ] Logs détaillés des traitements en erreur
 - [ ] Envoi des alertes en cas d'erreur (emails et slack)
 
+
 ### Dashboard de Monitoring
 
 - [ ] Vue d'ensemble des synchronisations actives
@@ -67,7 +74,9 @@ Le service permet de :
 - [ ] Alertes en cas d'erreur
 - [ ] Historique des synchronisations
 
+
 ## 🏗️ Architecture Technique
+
 
 ### Stack Générale
 
@@ -83,6 +92,7 @@ Le service permet de :
 - **Notifications** : Email (Resend ou SendGrid), Slack (webhooks)
 - **Monitoring** : Statistiques et logs stockés dans Supabase, visualisés dans le dashboard Next.js
 
+
 ### Gestion des environnements (dev, test, prod)
 
 - **Variables d'environnement distinctes** pour chaque environnement (URL Supabase, clés API, Notion, etc.)
@@ -94,6 +104,7 @@ Le service permet de :
 
 - **Secrets** : stockés dans Vercel (Environment Variables) et Supabase (Project Settings)
 - **CI/CD** : GitHub Actions pour automatiser les tests et le déploiement
+
 
 ### Gestion de la pile des traitements (webhook & batch)
 
@@ -111,6 +122,7 @@ Le service permet de :
     - Le worker sélectionne à chaque itération un nombre limité de jobs par synchronisation (round-robin)
     - Les jobs en échec sont réessayés une fois (1 retry maximum), puis marqués en erreur
 
+
 - **Scalabilité** :
   - Le traitement est stateless, plusieurs workers peuvent tourner en parallèle
   - Les verrous sont gérés au niveau de la base (row-level locking) pour éviter les conflits
@@ -124,6 +136,7 @@ Le service permet de :
 - La pile (table PostgreSQL) est indexée pour garantir la performance.
 - Les traitements de plus de 7 jours sont automatiquement purgés de la pile.
 
+
 ### Authentification à l'API Grand Shooting (batch)
 
 - Pour chaque synchronisation par batch, la connexion à l'API Grand Shooting se fait avec **deux tokens Bearer distincts** :
@@ -133,20 +146,24 @@ Le service permet de :
 - Les tokens sont stockés de façon sécurisée (chiffrés en base, jamais exposés côté client)
 - Chaque synchronisation référence explicitement les deux tokens nécessaires à son exécution
 
+
 ### Sécurisation des tokens API
 
 - Les tokens Bearer sont chiffrés en base avec AES256.
 - Pas de rotation automatique : l'âge des clés est affiché pour information.
+
 
 ### Rate limiting API Grand Shooting
 
 - L'API Grand Shooting impose une limite de 4 requêtes par seconde et par compte (principal ou secondaire).
 - Le moteur de synchronisation doit respecter ce quota pour chaque compte. 
 
+
 ### Règles de mapping
 
 - Seules les règles prédéfinies sont autorisées (voir documentation feature mapping).
 - Toute exécution de code JS pour transformation doit être sandboxée.
+
 
 ### Authentification : clarification
 
@@ -158,10 +175,13 @@ Le service permet de :
   - L'authentification des utilisateurs humains (accès au frontend, gestion des synchronisations, monitoring) se fait via **OAuth** (Google, etc.) grâce à Supabase Auth.
   - Cela permet une gestion sécurisée et moderne des accès utilisateurs, indépendante des tokens API utilisés pour la synchronisation.
 
+
+
 ### Gestion des erreurs et des retries
 
 - En cas d'erreur (code de retour ≠ 2xx ou erreur de format), un seul retry est effectué pour éviter tout risque de DDoS.
 - Les logs conservent les messages en erreur pendant 7 jours pour permettre un éventuel replay manuel.
+
 
 ### Gestion des alertes (email & Slack)
 
@@ -170,7 +190,9 @@ Le service permet de :
 - Au maximum 1 alerte est envoyée par heure à chaque utilisateur
 - Les alertes contiennent les informations nécessaires au diagnostic (comptes concernés, volumétrie, logs).
 
+
 ## 📊 Spécifications des Données
+
 
 ### Structure des Références à synchroniser
 
@@ -218,6 +240,7 @@ Chaque synchronisation traite des listes de références issues du catalogue pri
 - Jusqu'à **plusieurs milliers de références à synchroniser par jour**.
 - Les synchronisations peuvent être déclenchées par webhook (notification temps réel) ou par batch (API Grand Shooting).
 
+
 ### Gestion des comptes et synchronisations
 
 - **Compte Grand Shooting** :
@@ -233,6 +256,8 @@ Chaque synchronisation traite des listes de références issues du catalogue pri
   - Fréquence et planification des batchs
   - Statut, logs, volumétrie, erreurs
 
+
+
 ### Gestion des utilisateurs et droits
 
 - **Utilisateur** :
@@ -241,15 +266,19 @@ Chaque synchronisation traite des listes de références issues du catalogue pri
     - `admin` : gestion des accès utilisateurs, création/modification/suppression des synchronisations
     - `standard` : accès à la consultation, monitoring, relance de synchronisation
 
+
 - Les opérations de configuration sont strictement réservées aux admins.
 - Authentification via Supabase Auth (Google, email, etc.)
 - Gestion des permissions et audit des actions sensibles
+
 
 ### Gestion du mapping des champs (principal → secondaire)
 
 Pour chaque synchronisation, il est nécessaire de définir un mapping entre les champs du compte principal et ceux du compte secondaire. Ce mapping permet d'adapter la structure des données, de gérer les différences de nomenclature ou de format, et d'appliquer des règles de transformation si besoin.
 - **Structure du mapping** :
   - Pour chaque synchronisation, une table ou un objet de mapping est associé, par exemple :
+
+
 
 ```json
 {
@@ -270,6 +299,7 @@ Pour chaque synchronisation, il est nécessaire de définir un mapping entre les
     - `color` (principal) → `couleur` (secondaire), avec conversion en majuscules
     - `tags` (array) → `tags_concat` (string), avec jointure par virgule
 
+
 - **Gestion dynamique** :
   - Le mapping doit être modifiable via l'interface de configuration
   - Les mappings sont stockés en base (table dédiée ou champ JSON dans la config de synchronisation)
@@ -278,6 +308,8 @@ Pour chaque synchronisation, il est nécessaire de définir un mapping entre les
 - **Validation** :
   - Vérification de la cohérence du mapping avant activation d'une synchronisation
   - Alertes en cas de champ manquant ou de conflit de type
+
+
 
 ## 🔄 Flux de Synchronisation
 
@@ -309,6 +341,8 @@ Pour chaque synchronisation, il est nécessaire de définir un mapping entre les
   - Génération de rapports quotidiens
   - Possibilité de rejouer des traitements exécutés ou en erreur
 
+
+
 ## 🛡️ Sécurité et Conformité
 
 - [ ] Chiffrement des tokens API (AES-256)
@@ -317,7 +351,9 @@ Pour chaque synchronisation, il est nécessaire de définir un mapping entre les
 - [ ] Backup automatique des configurations
 - [ ] Conformité RGPD pour les données personnelles
 
+
 ## 📅 Planning et Milestones
+
 
 ### Phase 1 : Foundation (Semaine 1-2)
 
@@ -326,12 +362,14 @@ Pour chaque synchronisation, il est nécessaire de définir un mapping entre les
 - [ ] Intégration API Grand Shooting (analyse + tests)
 - [ ] Interface de connexion et authentification
 
+
 ### Phase 2 : Core Features (Semaine 3-4)
 
 - [ ] Moteur de synchronisation basique
 - [ ] Interface de configuration des mappings
 - [ ] Système de logs et audit trail
 - [ ] Tests unitaires et d'intégration
+
 
 ### Phase 3 : Advanced Features (Semaine 5-6)
 
@@ -340,12 +378,14 @@ Pour chaque synchronisation, il est nécessaire de définir un mapping entre les
 - [ ] Système d'alertes et notifications
 - [ ] API REST pour l'administration
 
+
 ### Phase 4 : Production (Semaine 7-8)
 
 - [ ] Tests de charge et performance
 - [ ] Documentation complète (utilisateur + technique)
 - [ ] Configuration de production et CI/CD
 - [ ] Formation utilisateurs et go-live
+
 
 ## 🧪 Critères d'Acceptation
 
@@ -355,12 +395,14 @@ Pour chaque synchronisation, il est nécessaire de définir un mapping entre les
 - [ ] Gestion d'erreurs robuste (auto-recovery > 95%)
 - [ ] Performance acceptable (< 5s pour sync standard, < 30s pour batch)
 
+
 ## 📈 Métriques de Succès
 
 - **Fiabilité** : 99.9% de synchronisations réussies
 - **Performance** : Traitement de 1000 enregistrements/minute
 - **Adoption** : 90% des utilisateurs configurent une sync en < 10 min
 - **Satisfaction** : Score NPS > 50
+
 
 ## 📚 Ressources et Documentation
 
@@ -369,6 +411,7 @@ Pour chaque synchronisation, il est nécessaire de définir un mapping entre les
 - [ ] Documentation technique (architecture + déploiement)
 - [ ] Runbook de maintenance et troubleshooting
 - [ ] Formation vidéo pour les utilisateurs finaux
+
 
 ## 🔗 Liens Utiles
 

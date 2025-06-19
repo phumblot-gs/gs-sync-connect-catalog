@@ -1,5 +1,5 @@
-const NotionClient = require('./notion/client');
-const NotionSync = require('./notion/sync');
+const NotionClient = require('../docs/notion/client');
+const NotionSync = require('../docs/notion/sync');
 
 async function main() {
   console.log('🚀 GS Sync Connect Catalog - Notion Integration');
