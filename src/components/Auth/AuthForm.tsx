@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
-import { supabase } from '@/lib/supabase'
+import { supabase, isBuildMode } from '@/lib/supabase'
 
 export default function AuthForm() {
   const [redirectTo, setRedirectTo] = useState('');
@@ -13,6 +13,18 @@ export default function AuthForm() {
     setRedirectTo(`${window.location.origin}/auth/callback`);
   }, []);
 
+  // Si nous sommes en mode build, afficher un message
+  if (isBuildMode()) {
+    return (
+      <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold mb-6 text-center">Mode Build</h2>
+        <p className="text-gray-600 text-center">
+          Cette page n'est pas disponible en mode build statique.
+        </p>
+      </div>
+    );
+  }
+
   if (!redirectTo) {
     // Render a loading state or nothing while waiting for the client-side redirect URL
     return (
@@ -21,6 +33,18 @@ export default function AuthForm() {
         <div className="h-10 bg-gray-200 rounded w-full mb-4"></div>
         <div className="h-10 bg-gray-200 rounded w-full mb-4"></div>
         <div className="h-12 bg-gray-300 rounded w-full"></div>
+      </div>
+    );
+  }
+
+  // Vérifier que supabase est disponible
+  if (!supabase) {
+    return (
+      <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold mb-6 text-center">Erreur de configuration</h2>
+        <p className="text-red-600 text-center">
+          Impossible de se connecter à Supabase.
+        </p>
       </div>
     );
   }

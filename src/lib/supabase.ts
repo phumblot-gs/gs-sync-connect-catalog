@@ -31,15 +31,22 @@ const getSupabaseConfig = () => {
 
 const config = getSupabaseConfig()
 
+// Vérifier si nous sommes dans un environnement de build avec des valeurs factices
+const isBuildEnvironment = process.env.NODE_ENV === 'production' && 
+  (config.url?.includes('dummy') || config.anonKey?.includes('dummy'))
+
 if (!config.url || !config.anonKey) {
   throw new Error('Configuration Supabase manquante')
 }
 
-export const supabase = createClient(config.url, config.anonKey)
+// Créer le client Supabase seulement si nous ne sommes pas en mode build factice
+export const supabase = isBuildEnvironment 
+  ? null 
+  : createClient(config.url, config.anonKey)
 
 // Client admin (pour Edge Functions ou API sécurisée)
-// Seulement créé si serviceRoleKey est disponible
-export const supabaseAdmin = config.serviceRoleKey 
+// Seulement créé si serviceRoleKey est disponible et pas en mode build factice
+export const supabaseAdmin = (config.serviceRoleKey && !isBuildEnvironment)
   ? createClient(config.url, config.serviceRoleKey)
   : null
 
@@ -47,8 +54,12 @@ export const supabaseAdmin = config.serviceRoleKey
 export const supabaseConfig = {
   url: config.url,
   environment: process.env.NODE_ENV || 'development',
-  hasServiceRoleKey: !!config.serviceRoleKey
+  hasServiceRoleKey: !!config.serviceRoleKey,
+  isBuildEnvironment
 }
 
 // Fonction utilitaire pour vérifier si le client admin est disponible
-export const hasAdminClient = () => !!supabaseAdmin 
+export const hasAdminClient = () => !!supabaseAdmin
+
+// Fonction utilitaire pour vérifier si nous sommes en mode build
+export const isBuildMode = () => isBuildEnvironment 
