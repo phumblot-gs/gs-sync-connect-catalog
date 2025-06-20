@@ -102,6 +102,56 @@ NOTION_PAGE_ID=216582cb2b9c8045881ae17bc1b78385
 NOTION_FEATURES_DATABASE_ID=1a5582cb2b9c807682bef53c030f683b
 ```
 
+## Configuration de l'authentification Google (Supabase)
+
+### 1. Configuration dans le dashboard Supabase
+
+1. **Aller dans Authentication > Providers**
+2. **Activer Google** en cliquant sur le toggle
+3. **Configurer les credentials Google OAuth** :
+   - Client ID : ID de votre application Google OAuth
+   - Client Secret : Secret de votre application Google OAuth
+4. **Ajouter les URLs de redirection** :
+   - `http://localhost:3000/auth/callback` (développement)
+   - `https://your-domain.vercel.app/auth/callback` (production)
+
+### 2. Configuration Google OAuth
+
+1. **Aller sur Google Cloud Console** : https://console.cloud.google.com/
+2. **Créer un projet** ou sélectionner un projet existant
+3. **Activer l'API Google+** (si pas déjà fait)
+4. **Créer des credentials OAuth 2.0** :
+   - Type : Application Web
+   - URLs autorisées : `http://localhost:3000` (dev), `https://your-domain.vercel.app` (prod)
+   - URLs de redirection autorisées : `http://localhost:3000/auth/callback` (dev), `https://your-domain.vercel.app/auth/callback` (prod)
+
+### 3. Variables d'environnement
+
+Créer un fichier `.env.local` à la racine avec :
+
+```bash
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Grand Shooting API
+GRAND_SHOOTING_API_URL=https://api.grand-shooting.com
+
+# JWT Secret for API tokens
+JWT_SECRET=your_jwt_secret_here
+
+# Sentry (optionnel)
+NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
+```
+
+### 4. Test de l'authentification
+
+1. **Lancer l'application** : `npm run dev`
+2. **Aller sur** `http://localhost:3000`
+3. **Cliquer sur "Se connecter avec Google"**
+4. **Vérifier la redirection** vers le dashboard après connexion
+
 ## 🔄 Workflow de développement
 
 ### Workflow PRD
@@ -241,4 +291,183 @@ npm run sync-features-from-notion
 
 ---
 
-*Ce document sera mis à jour au fur et à mesure du développement du projet.* 
+*Ce document sera mis à jour au fur et à mesure du développement du projet.*
+
+## 🚀 Configuration et Déploiement
+
+### 1. Configuration Supabase
+
+1. **Créer un projet Supabase** : https://supabase.com/
+2. **Configurer l'authentification Google** (voir section précédente)
+3. **Lier le projet** :
+   ```bash
+   supabase link --project-ref YOUR_PROJECT_REF
+   ```
+4. **Appliquer les migrations** :
+   ```bash
+   supabase db push
+   ```
+
+### 2. Variables d'environnement
+
+Créer un fichier `.env.local` à la racine avec :
+
+```bash
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Grand Shooting API
+GRAND_SHOOTING_API_URL=https://api.grand-shooting.com
+
+# JWT Secret for API tokens
+JWT_SECRET=your_jwt_secret_here
+
+# Sentry (optionnel)
+NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
+```
+
+### 3. Démarrage en développement
+
+```bash
+# Installer les dépendances
+npm install
+
+# Lancer le frontend
+npm run dev
+
+# Lancer le microservice (dans un autre terminal)
+cd microservices/sync-service
+npm run dev
+
+# Ou utiliser Docker Compose
+docker-compose up -d
+```
+
+### 4. Test de l'architecture
+
+1. **Frontend** : http://localhost:3000
+2. **Microservice** : http://localhost:3001/health
+3. **Edge Function** : Déployée automatiquement sur Supabase
+
+### 5. Déploiement Vercel
+
+```bash
+# Installer Vercel CLI
+npm i -g vercel
+
+# Déployer
+vercel --prod
+
+# Configurer les variables d'environnement dans Vercel
+vercel env add NEXT_PUBLIC_SUPABASE_URL
+vercel env add SUPABASE_SERVICE_ROLE_KEY
+# etc...
+```
+
+## 📊 Architecture mise en place
+
+### ✅ **Composants configurés :**
+
+1. **Frontend Next.js** avec authentification Google
+2. **Microservice de synchronisation** (Express + Docker)
+3. **Base de données Supabase** avec schéma complet
+4. **Edge Function** pour le traitement de la pile
+5. **Client API Grand Shooting** avec rate limiting
+6. **Système de tokens API** pour les utilisateurs
+7. **Middleware d'authentification** pour les API
+
+### 🔄 **Flux de données :**
+
+1. **Webhook** → Edge Function → Pile de traitement → Microservice
+2. **Batch** → API → Pile de traitement → Microservice
+3. **Frontend** → API Gateway → Base de données
+
+### 🛡️ **Sécurité :**
+
+- Authentification Google OAuth
+- Tokens API chiffrés
+- Rate limiting API Grand Shooting
+- Protection des routes
+
+### 📈 **Prochaines étapes :**
+
+1. **Implémenter la logique de synchronisation** dans le microservice
+2. **Créer l'interface de configuration** des synchronisations
+3. **Ajouter le monitoring** et les alertes
+4. **Configurer les tests** automatisés
+5. **Déployer en production** 
+
+## 🏗️ Configuration des 3 Environnements
+
+Le projet est configuré pour fonctionner avec 3 environnements distincts :
+
+### **Environnements disponibles :**
+
+1. **Development** (`NODE_ENV=development`)
+   - URL : `http://localhost:3000`
+   - Base de données : Supabase Development
+   - Authentification : Google OAuth (emails de dev)
+
+2. **Staging** (`NODE_ENV=staging`)
+   - URL : `https://staging-gs-sync.vercel.app`
+   - Base de données : Supabase Staging
+   - Authentification : Google OAuth (emails de test)
+
+3. **Production** (`NODE_ENV=production`)
+   - URL : `https://gs-sync.vercel.app`
+   - Base de données : Supabase Production
+   - Authentification : Google OAuth (emails réels)
+
+### **Configuration rapide :**
+
+```bash
+# 1. Créer les 3 projets Supabase (voir docs/environments-setup.md)
+
+# 2. Configurer les variables d'environnement
+cp .env.example .env.development
+cp .env.example .env.staging  
+cp .env.example .env.production
+
+# 3. Lier les projets Supabase
+npm run supabase:dev
+npm run supabase:staging
+npm run supabase:prod
+
+# 4. Déployer
+npm run deploy:dev
+npm run deploy:staging
+npm run deploy:prod
+```
+
+### **Scripts disponibles :**
+
+```bash
+# Développement
+npm run dev                    # Lance en mode development
+npm run build:dev             # Build pour development
+npm run deploy:dev            # Déploie en development
+
+# Staging
+npm run build:staging         # Build pour staging
+npm run deploy:staging        # Déploie en staging
+
+# Production
+npm run build:prod            # Build pour production
+npm run deploy:prod           # Déploie en production
+
+# Supabase
+npm run supabase:dev          # Migrations development
+npm run supabase:staging      # Migrations staging
+npm run supabase:prod         # Migrations production
+```
+
+### **Indicateur d'environnement :**
+
+Un banner coloré s'affiche automatiquement en haut de l'écran :
+- 🔵 **DEV** (bleu) : Development
+- 🟡 **STAGING** (jaune) : Staging  
+- 🟢 **PROD** (vert) : Production (pas de banner)
+
+**Documentation complète :** Voir `docs/environments-setup.md` 

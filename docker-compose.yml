@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  sync-service:
+    build: ./microservices/sync-service
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - GRAND_SHOOTING_API_URL=${GRAND_SHOOTING_API_URL}
+    volumes:
+      - ./microservices/sync-service:/app
+      - /app/node_modules
