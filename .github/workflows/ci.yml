@@ -38,5 +38,5 @@ jobs:
         NODE_ENV: production
         NEXT_PUBLIC_SUPABASE_URL: https://dummy.supabase.co
         NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-key-for-build-only
-        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        SUPABASE_SERVICE_ROLE_KEY: dummy-service-key-for-build-only
       run: npm run build
