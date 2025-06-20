@@ -3,10 +3,27 @@
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { isBuildMode } from '@/lib/supabase'
 
 export default function HomePage() {
   const { user, loading } = useAuth()
   const router = useRouter()
+
+  // Si nous sommes en mode build, afficher un message
+  if (isBuildMode()) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            GS Sync Connect
+          </h1>
+          <p className="text-gray-600">
+            Cette application n'est pas disponible en mode build statique.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   useEffect(() => {
     if (!loading) {
