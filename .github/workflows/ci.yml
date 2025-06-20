@@ -36,6 +36,7 @@ jobs:
     - name: Build
       env:
         NODE_ENV: production
-        NEXT_PUBLIC_SUPABASE_URL: https://aozwgkgeigdgfvbiuixe.supabase.co
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvendna2dlaWdkZ2Z2Yml1aXhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzNTQ3OTUsImV4cCI6MjA2NTkzMDc5NX0.5vkq74wyiX_4DF3_7j2_KzVTb5aVrsKa3iOnFT7MALU
+        NEXT_PUBLIC_SUPABASE_URL: https://dummy.supabase.co
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-key-for-build-only
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       run: npm run build
