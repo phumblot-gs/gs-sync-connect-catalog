@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import EnvironmentBanner from "@/components/EnvironmentBanner";
 
+export const dynamic = 'force-dynamic'
+
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
