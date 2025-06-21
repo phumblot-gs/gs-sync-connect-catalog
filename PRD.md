@@ -370,8 +370,8 @@ Pour chaque synchronisation, il est nécessaire de définir un mapping entre les
 
 ### Phase 1 : Foundation (Semaine 1-2)
 
-- [ ] Architecture technique et choix technologiques
-- [ ] Configuration projet et environnements
+- [x] Architecture technique et choix technologiques
+- [x] Configuration projet et environnements
 - [ ] Intégration API Grand Shooting (analyse + tests)
 - [ ] Interface de connexion et authentification
 

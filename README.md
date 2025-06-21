@@ -353,18 +353,11 @@ docker-compose up -d
 
 ### 5. Déploiement Vercel
 
-```bash
-# Installer Vercel CLI
-npm i -g vercel
+Les commits doivent se faire sur la branche git `develop`. Vercel les déploie automatiquement sur l'environnement preview avec une intégration à la base supabase `gs-sync-connect-dev`.
 
-# Déployer
-vercel --prod
+Il faut ensuite effectuer un PR sur la branche `staging`. Vercel les déploie aussi sur l'environnement preview mais les variables d'environnements associés diffèrent, avec en particulier la base supabase `gs-sync-connect-staging` dédiée aux tests métiers avant montée en production.
 
-# Configurer les variables d'environnement dans Vercel
-vercel env add NEXT_PUBLIC_SUPABASE_URL
-vercel env add SUPABASE_SERVICE_ROLE_KEY
-# etc...
-```
+Enfin un PR sur la branche `main` déclenchera un deploiement Vercel sur l'environnement `production` dont les variables d'environnement le relient à la base supabase `gs-sync-connect-prod`.
 
 ## 📊 Architecture mise en place
 
@@ -372,7 +365,7 @@ vercel env add SUPABASE_SERVICE_ROLE_KEY
 
 1. **Frontend Next.js** avec authentification Google
 2. **Microservice de synchronisation** (Express + Docker)
-3. **Base de données Supabase** avec schéma complet
+3. **Base de données Supabase** postgresql
 4. **Edge Function** pour le traitement de la pile
 5. **Client API Grand Shooting** avec rate limiting
 6. **Système de tokens API** pour les utilisateurs

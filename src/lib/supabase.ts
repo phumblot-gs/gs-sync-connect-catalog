@@ -37,6 +37,15 @@ if (isCIEnvironment) {
   const getSupabaseConfig = () => {
     const env = (process.env.NODE_ENV || 'development') as Environment
     
+    console.log('🔧 Supabase Config Debug:', {
+      NODE_ENV: process.env.NODE_ENV,
+      env,
+      NEXT_PUBLIC_SUPABASE_URL_DEV: process.env.NEXT_PUBLIC_SUPABASE_URL_DEV ? 'SET' : 'NOT SET',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV ? 'SET' : 'NOT SET',
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'NOT SET',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET'
+    });
+    
     switch (env) {
       case 'development':
         return {
@@ -46,15 +55,15 @@ if (isCIEnvironment) {
         }
       case 'staging':
         return {
-          url: process.env.NEXT_PUBLIC_SUPABASE_URL_STAGING,
-          anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING,
-          serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY_STAGING
+          url: process.env.NEXT_PUBLIC_SUPABASE_URL_STAGING || process.env.NEXT_PUBLIC_SUPABASE_URL,
+          anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY_STAGING || process.env.SUPABASE_SERVICE_ROLE_KEY
         }
       case 'production':
         return {
-          url: process.env.NEXT_PUBLIC_SUPABASE_URL_PROD,
-          anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD,
-          serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY_PROD
+          url: process.env.NEXT_PUBLIC_SUPABASE_URL_PROD || process.env.NEXT_PUBLIC_SUPABASE_URL,
+          anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY_PROD || process.env.SUPABASE_SERVICE_ROLE_KEY
         }
       default:
         throw new Error(`Environnement non supporté: ${env}`)
