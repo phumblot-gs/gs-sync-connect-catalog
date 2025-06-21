@@ -37,6 +37,15 @@ if (isCIEnvironment) {
   const getSupabaseConfig = () => {
     const env = (process.env.NODE_ENV || 'development') as Environment
     
+    console.log('🔧 Supabase Config Debug:', {
+      NODE_ENV: process.env.NODE_ENV,
+      env,
+      NEXT_PUBLIC_SUPABASE_URL_DEV: process.env.NEXT_PUBLIC_SUPABASE_URL_DEV ? 'SET' : 'NOT SET',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV ? 'SET' : 'NOT SET',
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'NOT SET',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET'
+    });
+    
     switch (env) {
       case 'development':
         return {
