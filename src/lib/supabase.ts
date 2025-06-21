@@ -35,10 +35,25 @@ if (isCIEnvironment) {
   type Environment = 'development' | 'staging' | 'production'
 
   const getSupabaseConfig = () => {
-    const env = (process.env.NODE_ENV || 'development') as Environment
+    // Déterminer l'environnement métier
+    const getEnvironment = (): Environment => {
+      if (process.env.NODE_ENV === 'development') {
+        return 'development'
+      }
+      
+      // Sur Vercel, utiliser VERCEL_ENV
+      if (process.env.VERCEL_ENV === 'preview') {
+        return 'staging'
+      }
+      
+      return 'production'
+    }
+
+    const env = getEnvironment()
     
     console.log('🔧 Supabase Config Debug:', {
       NODE_ENV: process.env.NODE_ENV,
+      VERCEL_ENV: process.env.VERCEL_ENV,
       env,
       NEXT_PUBLIC_SUPABASE_URL_DEV: process.env.NEXT_PUBLIC_SUPABASE_URL_DEV ? 'SET' : 'NOT SET',
       NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV ? 'SET' : 'NOT SET',
@@ -61,9 +76,9 @@ if (isCIEnvironment) {
         }
       case 'production':
         return {
-          url: process.env.NEXT_PUBLIC_SUPABASE_URL_PROD || process.env.NEXT_PUBLIC_SUPABASE_URL,
-          anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-          serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY_PROD || process.env.SUPABASE_SERVICE_ROLE_KEY
+          url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+          anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY
         }
       default:
         throw new Error(`Environnement non supporté: ${env}`)
