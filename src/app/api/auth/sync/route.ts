@@ -22,7 +22,21 @@ export async function POST(request: NextRequest) {
     
     // Utiliser la même logique de configuration que le middleware
     const getSupabaseConfig = () => {
-      const env = (process.env.NODE_ENV || 'development') as Environment
+      // Déterminer l'environnement métier
+      const getEnvironment = (): Environment => {
+        if (process.env.NODE_ENV === 'development') {
+          return 'development'
+        }
+        
+        // Sur Vercel, utiliser VERCEL_ENV
+        if (process.env.VERCEL_ENV === 'preview') {
+          return 'staging'
+        }
+        
+        return 'production'
+      }
+
+      const env = getEnvironment()
       
       switch (env) {
         case 'development':
@@ -32,13 +46,13 @@ export async function POST(request: NextRequest) {
           }
         case 'staging':
           return {
-            url: process.env.NEXT_PUBLIC_SUPABASE_URL_STAGING,
-            anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING,
+            url: process.env.NEXT_PUBLIC_SUPABASE_URL_STAGING || process.env.NEXT_PUBLIC_SUPABASE_URL,
+            anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
           }
         case 'production':
           return {
-            url: process.env.NEXT_PUBLIC_SUPABASE_URL_PROD,
-            anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD,
+            url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+            anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
           }
         default:
           return {
