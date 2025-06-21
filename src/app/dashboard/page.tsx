@@ -4,6 +4,8 @@ import { useAuth } from '@/hooks/useAuth'
 import ProtectedLayout from '@/components/Layout/ProtectedLayout'
 import { isBuildMode } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
 export default function DashboardPage() {
   const { user, signOut } = useAuth()
 

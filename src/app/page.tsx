@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { isBuildMode } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
 export default function HomePage() {
   const { user, loading } = useAuth()
   const router = useRouter()
