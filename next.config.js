@@ -1,7 +1,5 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  serverExternalPackages: ['@supabase/supabase-js'],
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   // Configuration pour les environnements multiples
   async headers() {
     return [
@@ -18,4 +16,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig; 

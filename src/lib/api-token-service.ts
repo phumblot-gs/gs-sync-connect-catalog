@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, isBuildMode } from './supabase'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
@@ -12,6 +12,15 @@ export interface ApiToken {
 
 export class ApiTokenService {
   async generateToken(userId: string, name: string, expiresInDays?: number): Promise<string> {
+    // Si nous sommes en mode build, retourner un token factice
+    if (isBuildMode()) {
+      return 'dummy-token-for-build'
+    }
+
+    if (!supabase) {
+      throw new Error('Supabase client not available')
+    }
+
     const token = this.generateRandomToken()
     const tokenHash = await bcrypt.hash(token, 12)
     
@@ -36,6 +45,15 @@ export class ApiTokenService {
   }
 
   async validateToken(token: string): Promise<string | null> {
+    // Si nous sommes en mode build, retourner null
+    if (isBuildMode()) {
+      return null
+    }
+
+    if (!supabase) {
+      return null
+    }
+
     const { data: tokens } = await supabase
       .from('user_api_tokens')
       .select('*')
@@ -55,6 +73,15 @@ export class ApiTokenService {
   }
 
   async revokeToken(tokenId: string, userId: string): Promise<void> {
+    // Si nous sommes en mode build, ne rien faire
+    if (isBuildMode()) {
+      return
+    }
+
+    if (!supabase) {
+      throw new Error('Supabase client not available')
+    }
+
     const { error } = await supabase
       .from('user_api_tokens')
       .delete()
@@ -65,6 +92,15 @@ export class ApiTokenService {
   }
 
   async getUserTokens(userId: string): Promise<ApiToken[]> {
+    // Si nous sommes en mode build, retourner un tableau vide
+    if (isBuildMode()) {
+      return []
+    }
+
+    if (!supabase) {
+      return []
+    }
+
     const { data, error } = await supabase
       .from('user_api_tokens')
       .select('*')
