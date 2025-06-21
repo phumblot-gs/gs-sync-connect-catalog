@@ -28,8 +28,11 @@ export async function POST(request: NextRequest) {
           return 'development'
         }
         
-        // Sur Vercel, utiliser VERCEL_ENV
-        if (process.env.VERCEL_ENV === 'preview') {
+        // Côté client : utiliser NEXT_PUBLIC_APP_ENV
+        // Côté serveur : utiliser VERCEL_ENV
+        const appEnv = process.env.NEXT_PUBLIC_APP_ENV || process.env.VERCEL_ENV
+        
+        if (appEnv === 'staging' || appEnv === 'preview') {
           return 'staging'
         }
         

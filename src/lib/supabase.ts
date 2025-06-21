@@ -41,8 +41,11 @@ if (isCIEnvironment) {
         return 'development'
       }
       
-      // Sur Vercel, utiliser VERCEL_ENV
-      if (process.env.VERCEL_ENV === 'preview') {
+      // Côté client : utiliser NEXT_PUBLIC_APP_ENV
+      // Côté serveur : utiliser VERCEL_ENV
+      const appEnv = process.env.NEXT_PUBLIC_APP_ENV || process.env.VERCEL_ENV
+      
+      if (appEnv === 'staging' || appEnv === 'preview') {
         return 'staging'
       }
       
@@ -54,6 +57,7 @@ if (isCIEnvironment) {
     console.log('🔧 Supabase Config Debug:', {
       NODE_ENV: process.env.NODE_ENV,
       VERCEL_ENV: process.env.VERCEL_ENV,
+      NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
       env,
       NEXT_PUBLIC_SUPABASE_URL_DEV: process.env.NEXT_PUBLIC_SUPABASE_URL_DEV ? 'SET' : 'NOT SET',
       NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV ? 'SET' : 'NOT SET',
